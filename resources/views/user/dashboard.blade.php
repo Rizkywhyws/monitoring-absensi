@@ -32,32 +32,6 @@
         max-width: 420px;
         line-height: 1.5;
     }
-    .greeting-actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-    .btn-ghost-light {
-        background: rgba(255,255,255,0.14);
-        border: 1px solid rgba(255,255,255,0.25);
-        color: white;
-        font-size: 13px;
-        font-weight: 600;
-        padding: 9px 14px;
-        border-radius: var(--radius-sm);
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        text-decoration: none;
-        white-space: nowrap;
-    }
-    .btn-ghost-light svg { width: 14px; height: 14px; }
-    .btn-ghost-light.primary {
-        background: white;
-        color: var(--brand-700);
-        border-color: white;
-    }
-
     .dash-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -100,7 +74,6 @@
     .badge.green { background: var(--green-bg); color: var(--green-text); }
     .badge.blue { background: var(--blue-bg); color: var(--blue-text); }
 
-    /* ===== Identitas peserta ===== */
     .identity-row {
         display: flex;
         gap: 14px;
@@ -140,8 +113,6 @@
         font-weight: 600;
         color: var(--ink-900);
     }
-
-    /* ===== Presensi hari ini ===== */
     .presensi-meta {
         display: flex;
         justify-content: space-between;
@@ -235,7 +206,7 @@
         color: var(--ink-300);
     }
     .stat-caption.warn { color: var(--red-text); }
-        .activity-list {
+    .activity-list {
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -326,20 +297,6 @@
             <h1>Selamat datang, {{ $userName ?? 'Nama Peserta' }} 👋</h1>
             <p>{{ $today ?? now()->translatedFormat('l, d F Y') }} — Semoga hari magangmu berjalan lancar.</p>
         </div>
-        <div class="greeting-actions">
-            <a href="#" class="btn-ghost-light primary">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.7"/></svg>
-                Absen Sekarang
-            </a>
-            <a href="#" class="btn-ghost-light">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                Buat Ticket
-            </a>
-            <a href="#" class="btn-ghost-light">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 4h11l3 3v13H5V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 10h6M9 14h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-                Daily Activity
-            </a>
-        </div>
     </div>
 
     <div class="dash-grid">
@@ -381,7 +338,6 @@
             </div>
         </div>
 
-        {{-- Card presensi hari ini --}}
         <div class="card">
             <div class="card-header">
                 <h3>
@@ -407,7 +363,7 @@
                 Verifikasi lokasi akan dilakukan saat Anda menekan tombol Check-in.
             </div>
 
-            <a href="#" class="btn-primary-full">
+            <a href="{{ route('absensi') }}" class="btn-primary-full">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.8"/></svg>
                 Ambil Presensi Sekarang (Check-in)
             </a>

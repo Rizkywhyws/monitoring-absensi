@@ -56,6 +56,7 @@
             grid-template-columns: 250px 1fr;
             min-height: 100vh;
         }
+
         .sidebar-backdrop {
         display: none;
         position: fixed;
@@ -64,7 +65,6 @@
         z-index: 30;
         }
         .sidebar-backdrop.is-open { display: block; }
-
         .sidebar {
             background: var(--surface-card);
             border-right: 1px solid var(--line);
@@ -206,7 +206,6 @@
         }
         .sidebar-user-logout svg { width: 16px; height: 16px; }
 
-        /* ===== Main area ===== */
         .main-area {
             display: flex;
             flex-direction: column;
@@ -270,10 +269,9 @@
             flex: 1;
         }
 
-
         @media (max-width: 900px) {
             .app-shell { grid-template-columns: 1fr; }
-           .sidebar {
+            .sidebar {
                 position: fixed;
                 left: 0;
                 top: 0;
@@ -331,8 +329,8 @@
                     Dashboard
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="#">
+            <li class="nav-item {{ request()->routeIs('absensi') ? 'active' : '' }}">
+                <a href="{{ route('absensi') }}">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
                     Absensi
                 </a>
@@ -403,6 +401,7 @@
 </div>
 
 <script>
+    // Toggle sidebar di mobile
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
     const menuBtn = document.getElementById('mobileMenuBtn');

@@ -18,6 +18,13 @@ Route::get('/dashboard', function () {
     ]);
 })->name('dashboard');
 
+Route::get('/absensi', function () {
+    return view('user.absensi', [
+        'userName' => 'Refangga Ardiansah',
+        'nim'      => '240810101052',
+    ]);
+})->name('absensi');
+
 Route::get('/', function () {
     return view('welcome');
 });
