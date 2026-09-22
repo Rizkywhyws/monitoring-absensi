@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tickets/create', [TicketController::class, 'create'])->name('ticket.create');
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('ticket.show')->whereNumber('ticket');
     Route::post('/tickets', [TicketController::class, 'store'])->name('ticket.store');
+    Route::put('/tickets/{ticket}', [TicketController::class, 'update'])->name('ticket.update');
 });
 
 Route::get('/', function () {

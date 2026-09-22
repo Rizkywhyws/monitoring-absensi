@@ -4,6 +4,8 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\UpdateTicketRequest;
 use App\Http\Requests\StoreTicketRequest;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
@@ -114,5 +116,43 @@ class TicketController extends Controller
         $ticket->load(['user:id,name', 'attachments']);
 
         return view('user.detailTicket', compact('ticket') + $this->layoutData($request));
+    }
+    public function update(UpdateTicketRequest $request, Ticket $ticket)
+    {
+        abort_unless(
+            $request->user()->role === 'admin' || $ticket->user_id === $request->user()->id,
+            403
+        );
+
+        $data = $request->validated();
+
+        DB::transaction(function () use ($request, $ticket, $data) {
+            $ticket->update([
+                'title' => $data['title'],
+                'description' => $data['description'],
+            ]);
+
+            $removeIds = $data['remove_attachments'] ?? [];
+            if (!empty($removeIds)) {
+                $toRemove = $ticket->attachments()->whereIn('id', $removeIds)->get();
+                foreach ($toRemove as $attachment) {
+                    Storage::disk('public')->delete($attachment->file_path);
+                    $attachment->delete();
+                }
+            }
+
+            foreach ($request->file('attachments', []) as $file) {
+                $ticket->attachments()->create([
+                    'file_name' => Str::limit($file->getClientOriginalName(), 255, ''),
+                    'file_type' => $file->getClientMimeType(),
+                    'file_size' => $file->getSize(),
+                    'file_path' => $file->store('ticket-attachments', 'public'),
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('tickets')
+            ->with('success', "Tiket #{$ticket->ticket_number} berhasil diperbarui.");
     }
 }
