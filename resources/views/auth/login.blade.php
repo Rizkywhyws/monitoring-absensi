@@ -1,654 +1,488 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Masuk — Portal Magang</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Login - Sistem Manajemen PKL PLN Icon Plus</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
     <style>
-        :root {
-            --brand-900: #0b3b32;
-            --brand-800: #0f5145;
-            --brand-700: #146b5a;
-            --brand-600: #16806a;
-            --brand-500: #1a9678;
-            --brand-100: #e3f3ee;
+        @layer base {
 
-            --ink-900: #16211f;
-            --ink-700: #445350;
-            --ink-500: #6d7a77;
-            --ink-300: #a9b3b1;
-
-            --surface: #f6f8f7;
-            --surface-card: #ffffff;
-            --line: #e2e8e6;
-
-            --danger: #c4392f;
-            --radius-lg: 20px;
-            --radius-md: 12px;
-            --radius-sm: 8px;
-        }
-
-        * { box-sizing: border-box; }
-
-        html, body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--surface);
-            color: var(--ink-900);
-        }
-
-        .page {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 32px 16px;
-        }
-
-        .auth-shell {
-            width: 100%;
-            max-width: 980px;
-            background: var(--surface-card);
-            border-radius: var(--radius-lg);
-            box-shadow: 0 24px 60px -20px rgba(11, 59, 50, 0.25);
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: 1.05fr 1fr;
-            min-height: 560px;
-        }
-
-        .brand-panel {
-            background: linear-gradient(160deg, var(--brand-900) 0%, var(--brand-700) 55%, var(--brand-600) 100%);
-            color: white;
-            padding: 40px 40px 32px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: relative;
-        }
-
-        .brand-panel::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 85% 15%, rgba(255,255,255,0.06), transparent 45%);
-            pointer-events: none;
-        }
-
-        .brand-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .brand-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .brand-logo-mark {
-            width: 34px;
-            height: 34px;
-            border-radius: 9px;
-            background: rgba(255,255,255,0.14);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .brand-logo-mark svg { width: 18px; height: 18px; }
-
-        .brand-logo-text {
-            font-weight: 700;
-            font-size: 15px;
-            line-height: 1.2;
-        }
-        .brand-logo-text small {
-            display: block;
-            font-weight: 500;
-            font-size: 11px;
-            opacity: 0.7;
-            letter-spacing: 0.02em;
-        }
-
-        .brand-year-tag {
-            font-size: 12px;
-            padding: 5px 10px;
-            border-radius: 999px;
-            background: rgba(255,255,255,0.12);
-            white-space: nowrap;
-        }
-
-        .brand-context-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12.5px;
-            padding: 6px 12px;
-            border-radius: 999px;
-            background: rgba(255,255,255,0.1);
-            width: fit-content;
-            margin-top: 22px;
-        }
-
-        .brand-headline {
-            margin-top: 26px;
-        }
-        .brand-headline h1 {
-            font-size: 28px;
-            font-weight: 700;
-            line-height: 1.25;
-            margin: 0 0 10px;
-            letter-spacing: -0.01em;
-        }
-        .brand-headline p {
-            font-size: 14px;
-            line-height: 1.6;
-            color: rgba(255,255,255,0.78);
-            margin: 0;
-            max-width: 340px;
-        }
-
-        .brand-feature-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 26px;
-        }
-
-        .brand-feature {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: var(--radius-md);
-            padding: 12px 10px;
-        }
-        .brand-feature .icon {
-            width: 26px;
-            height: 26px;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.14);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 8px;
-        }
-        .brand-feature .icon svg { width: 13px; height: 13px; }
-        .brand-feature strong {
-            display: block;
-            font-size: 12.5px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-        .brand-feature span {
-            font-size: 11px;
-            color: rgba(255,255,255,0.65);
-            line-height: 1.4;
-        }
-
-        .brand-footer {
-            font-size: 11.5px;
-            color: rgba(255,255,255,0.55);
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 12px;
-            margin-top: 24px;
-        }
-        .brand-footer a {
-            color: rgba(255,255,255,0.75);
-            text-decoration: none;
-        }
-
-        /* Panel kanan: form */
-        .form-panel {
-            padding: 40px 44px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .form-panel-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 28px;
-        }
-
-        .role-pill {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--brand-700);
-            background: var(--brand-100);
-            padding: 5px 11px;
-            border-radius: 999px;
-        }
-
-        .version-tag {
-            font-size: 12px;
-            color: var(--ink-300);
-        }
-
-        .form-heading h2 {
-            font-size: 22px;
-            font-weight: 700;
-            margin: 0 0 6px;
-            color: var(--ink-900);
-        }
-        .form-heading p {
-            font-size: 13.5px;
-            color: var(--ink-500);
-            margin: 0 0 26px;
-            line-height: 1.5;
-        }
-
-        /* Alert error umum */
-        .alert-error {
-            background: #fdeceb;
-            border: 1px solid #f3c9c5;
-            color: var(--danger);
-            font-size: 13px;
-            padding: 12px 14px;
-            border-radius: var(--radius-sm);
-            margin-bottom: 18px;
-            line-height: 1.5;
-        }
-
-        .field-group {
-            margin-bottom: 16px;
-        }
-
-        .field-label-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 6px;
-        }
-
-        .field-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--ink-700);
-        }
-
-        .field-hint {
-            font-size: 11.5px;
-            color: var(--ink-300);
-        }
-
-        .input-wrap {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-wrap .field-icon {
-            position: absolute;
-            left: 13px;
-            width: 16px;
-            height: 16px;
-            color: var(--ink-300);
-            pointer-events: none;
-        }
-
-        .input-wrap input {
-            width: 100%;
-            padding: 11px 14px 11px 38px;
-            border: 1px solid var(--line);
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-family: inherit;
-            color: var(--ink-900);
-            background: var(--surface);
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .input-wrap input::placeholder { color: var(--ink-300); }
-
-        .input-wrap input:focus {
-            outline: none;
-            border-color: var(--brand-600);
-            box-shadow: 0 0 0 3px var(--brand-100);
-            background: var(--surface-card);
-        }
-
-        .input-wrap input.has-error {
-            border-color: var(--danger);
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 12px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            color: var(--ink-300);
-            padding: 4px;
-            display: flex;
-            align-items: center;
-        }
-        .toggle-password svg { width: 16px; height: 16px; }
-        .toggle-password:hover { color: var(--ink-700); }
-
-        .field-error {
-            font-size: 12px;
-            color: var(--danger);
-            margin-top: 6px;
-        }
-
-        .row-between {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 18px 0 22px;
-        }
-
-        .remember-check {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            font-size: 13px;
-            color: var(--ink-700);
-            cursor: pointer;
-        }
-        .remember-check input {
-            width: 15px;
-            height: 15px;
-            accent-color: var(--brand-600);
-            cursor: pointer;
-        }
-
-        .link-muted {
-            font-size: 13px;
-            color: var(--brand-700);
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .link-muted:hover { text-decoration: underline; }
-
-        .btn-primary {
-            width: 100%;
-            background: var(--brand-700);
-            color: white;
-            border: none;
-            padding: 12px 16px;
-            border-radius: var(--radius-sm);
-            font-size: 14.5px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: background 0.15s ease;
-        }
-        .btn-primary:hover { background: var(--brand-800); }
-        .btn-primary:active { background: var(--brand-900); }
-        .btn-primary svg { width: 15px; height: 15px; }
-
-        .help-box {
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: var(--radius-md);
-            padding: 12px 14px;
-            margin-top: 22px;
-        }
-        .help-box .icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            background: var(--brand-100);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .help-box .icon svg { width: 14px; height: 14px; color: var(--brand-700); }
-        .help-box strong {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--ink-900);
-            margin-bottom: 2px;
-        }
-        .help-box span {
-            font-size: 12px;
-            color: var(--ink-500);
-            line-height: 1.5;
-        }
-
-        /*Responsive: mobile*/
-        @media (max-width: 860px) {
-            .auth-shell {
-                grid-template-columns: 1fr;
-                min-height: unset;
+            html,
+            body {
+                margin: 0;
+                padding: 0;
             }
-            .brand-panel {
-                padding: 28px 24px;
+
+            body {
+                overscroll-behavior: none;
             }
-            .brand-headline h1 { font-size: 22px; }
-            .brand-feature-grid { display: none; } 
-            .brand-footer { display: none; }
-            .form-panel {
-                padding: 28px 24px 32px;
+
+            main>:first-child {
+                margin-top: 0 !important;
+            }
+
+            main>:last-child {
+                margin-bottom: 0 !important;
             }
         }
 
-        @media (max-width: 420px) {
-            .page { padding: 0; }
-            .auth-shell { border-radius: 0; box-shadow: none; }
-        }
-
-        /* Menghormati preferensi reduced motion */
-        @media (prefers-reduced-motion: reduce) {
-            * { transition: none !important; }
+        ::-webkit-scrollbar {
+            display: none;
         }
     </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f2f3ff",
+                        "tertiary-container": "#a36700",
+                        "primary-container": "#00846e",
+                        "on-secondary-fixed": "#001d31",
+                        "on-surface-variant": "#3d4945",
+                        "surface-bright": "#faf8ff",
+                        "inverse-primary": "#5ddbbe",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-surface": "#131b2e",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-secondary-container": "#00476e",
+                        "secondary-fixed-dim": "#93ccff",
+                        "on-primary-fixed": "#00201a",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#dae2fd",
+                        "error": "#ba1a1a",
+                        "inverse-surface": "#283044",
+                        "secondary": "#006398",
+                        "secondary-fixed": "#cce5ff",
+                        "on-tertiary-fixed": "#2a1700",
+                        "surface-tint": "#006b59",
+                        "on-primary-fixed-variant": "#005143",
+                        "inverse-on-surface": "#eef0ff",
+                        "primary-fixed": "#7cf8da",
+                        "surface": "#faf8ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d2d9f4",
+                        "tertiary": "#825100",
+                        "primary-fixed-dim": "#5ddbbe",
+                        "on-tertiary-container": "#fffbff",
+                        "secondary-container": "#5bb8fe",
+                        "on-error-container": "#93000a",
+                        "outline": "#6d7a75",
+                        "surface-container-highest": "#dae2fd",
+                        "on-error": "#ffffff",
+                        "on-background": "#131b2e",
+                        "surface-container-high": "#e2e7ff",
+                        "outline-variant": "#bccac4",
+                        "on-secondary": "#ffffff",
+                        "background": "#faf8ff",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-secondary-fixed-variant": "#004b73",
+                        "surface-container": "#eaedff",
+                        "primary": "#006857",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#f4fffa",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "1rem",
+                        "space-lg": "1.5rem",
+                        "space-xl": "2rem",
+                        "gutter-desktop": "1.5rem",
+                        "margin-tablet": "1.5rem",
+                        "sidebar-collapsed": "80px",
+                        "margin-desktop": "2rem",
+                        "space-md": "1rem",
+                        "space-xs": "0.5rem",
+                        "sidebar-width": "280px",
+                        "space-2xs": "0.25rem",
+                        "space-sm": "0.75rem",
+                        "gutter-mobile": "1rem",
+                        "space-2xl": "2.5rem",
+                        "container-max": "1440px",
+                        "space-3xl": "3rem"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "stat-counter": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-xl-mobile": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "26px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["22px", { "lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+                        "body-sm": ["12px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "stat-counter": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-xl-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "700" }],
+                        "headline-sm": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                },
+            },
+        };
+    </script>
 </head>
-<body>
-<div class="page">
-    <div class="auth-shell">
 
-        <div class="brand-panel">
-            <div>
-                <div class="brand-top">
-                    <div class="brand-logo">
-                        <div class="brand-logo-mark">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="white"/>
-                            </svg>
+<body class="bg-background font-body-md text-body-md text-on-surface antialiased">
+    <main class="w-full min-h-screen flex items-center justify-center p-space-md bg-background">
+        <div class="flex flex-col w-full">
+            <div
+                class="w-full max-w-6xl mx-auto min-h-[640px] rounded-2xl shadow-xl overflow-hidden bg-surface-container-lowest flex flex-col lg:flex-row my-auto text-[0.92rem]">
+
+                <!-- LEFT PANEL — Brand / marketing side -->
+                <div
+                    class="lg:w-[55%] relative flex flex-col justify-between p-space-lg lg:p-space-2xl overflow-hidden bg-gradient-to-br from-primary via-primary-container to-surface-tint text-on-primary">
+                    <div
+                        class="absolute -top-24 -left-24 w-96 h-96 bg-primary-fixed/20 rounded-full blur-3xl pointer-events-none">
+                    </div>
+                    <div
+                        class="absolute bottom-10 right-0 w-[500px] h-[500px] bg-secondary/25 rounded-full blur-3xl pointer-events-none">
+                    </div>
+                    <div class="absolute inset-0 opacity-10 pointer-events-none">
+                        <svg class="w-full h-full" height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <pattern height="40" id="grid-pattern" patternUnits="userSpaceOnUse" width="40">
+                                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1">
+                                    </path>
+                                </pattern>
+                            </defs>
+                            <rect fill="url(#grid-pattern)" height="100%" width="100%"></rect>
+                        </svg>
+                    </div>
+
+                    <div class="relative z-10 space-y-space-md">
+                        <div class="flex items-center justify-between">
+                            <div
+                                class="flex items-center space-x-space-sm bg-surface-container-lowest/95 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-md">
+                                <div
+                                    class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-fixed shadow-sm">
+                                    <span class="material-symbols-outlined text-2xl"
+                                        style="font-variation-settings: 'FILL' 1;">bolt</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span
+                                        class="font-headline-sm text-headline-sm font-bold text-on-surface leading-none tracking-tight">
+                                        PLN <span class="text-primary font-bold">Icon Plus</span>
+                                    </span>
+                                    <span
+                                        class="font-label-sm text-label-sm uppercase tracking-widest text-outline font-semibold mt-0.5">
+                                        PKL MANAGEMENT
+                                    </span>
+                                </div>
+                            </div>
+                            <div
+                                class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1 bg-surface-container-lowest/15 backdrop-blur-sm rounded-full text-on-primary font-label-md text-label-md">
+                                <span class="w-2 h-2 rounded-full bg-primary-fixed animate-ping"></span>
+                                <span>Tahun Akademik 2026/2027</span>
+                            </div>
                         </div>
-                        <div class="brand-logo-text">
-                            Portal Magang
-                            <small>Sistem Monitoring Absensi</small>
+                        <div
+                            class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-primary-fixed/20 text-on-primary font-label-md text-label-md backdrop-blur-md w-fit">
+                            <span class="material-symbols-outlined text-sm text-primary-fixed"
+                                style="font-variation-settings: 'FILL' 1;">verified</span>
+                            <span>Portal Resmi Peserta PKL &amp; Mahasiswa Magang</span>
                         </div>
                     </div>
-                    <span class="brand-year-tag">Tahun Akademik {{ date('Y') }}/{{ date('Y') + 1 }}</span>
+
+                    <div class="relative z-10 my-auto py-space-xl space-y-space-lg">
+                        <div class="space-y-space-sm">
+                            <h1
+                                class="font-headline-xl text-headline-xl font-bold text-on-primary tracking-tight leading-tight">
+                                Mulai Pengalaman Magang Profesional di PLN Icon Plus
+                            </h1>
+                            <p class="font-body-lg text-body-lg text-on-primary/85 max-w-xl">
+                                Kelola absensi berbasis geofencing GPS, penugasan tiket operasional lapangan, hingga
+                                logbook aktivitas harian dalam satu sistem terintegrasi.
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm pt-space-xs">
+                            <div
+                                class="p-space-md rounded-xl bg-surface-container-lowest/10 backdrop-blur-md hover:bg-surface-container-lowest/15 transition-all">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-surface-container-lowest/20 flex items-center justify-center mb-space-xs text-primary-fixed">
+                                    <span class="material-symbols-outlined text-lg">near_me</span>
+                                </div>
+                                <div class="font-headline-sm text-headline-sm font-semibold text-on-primary">Geofencing
+                                    Presisi</div>
+                                <div class="font-body-sm text-body-sm text-on-primary/75 mt-1">Radius 100m Kantor Jember
+                                </div>
+                            </div>
+                            <div
+                                class="p-space-md rounded-xl bg-surface-container-lowest/10 backdrop-blur-md hover:bg-surface-container-lowest/15 transition-all">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-surface-container-lowest/20 flex items-center justify-center mb-space-xs text-secondary-fixed">
+                                    <span class="material-symbols-outlined text-lg">receipt_long</span>
+                                </div>
+                                <div class="font-headline-sm text-headline-sm font-semibold text-on-primary">Pelaporan
+                                    Tiket</div>
+                                <div class="font-body-sm text-body-sm text-on-primary/75 mt-1">Otomatis ke Daily
+                                    Activity</div>
+                            </div>
+                            <div
+                                class="p-space-md rounded-xl bg-surface-container-lowest/10 backdrop-blur-md hover:bg-surface-container-lowest/15 transition-all">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-surface-container-lowest/20 flex items-center justify-center mb-space-xs text-tertiary-fixed">
+                                    <span class="material-symbols-outlined text-lg">health_and_safety</span>
+                                </div>
+                                <div class="font-headline-sm text-headline-sm font-semibold text-on-primary">Supervisi
+                                    K3</div>
+                                <div class="font-body-sm text-body-sm text-on-primary/75 mt-1">Monitoring Pembimbing
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="relative z-10 pt-space-sm flex flex-col sm:flex-row items-start sm:items-center justify-between text-on-primary/70 font-label-md text-label-md">
+                        <p>&copy; 2026 PT Indonesia Comnets Plus (PLN Icon Plus). Seluruh hak cipta dilindungi.</p>
+                        <div class="flex items-center space-x-3 mt-2 sm:mt-0">
+                            <span class="hover:text-on-primary cursor-pointer transition-colors">Kebijakan
+                                Privasi</span>
+                            <span>&bull;</span>
+                            <span class="hover:text-on-primary cursor-pointer transition-colors">Panduan Sistem</span>
+                        </div>
+                    </div>
                 </div>
 
-                <span class="brand-context-tag">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Portal Peserta Magang
+                <!-- RIGHT PANEL — Form Login -->
+                <div
+                    class="lg:w-[45%] flex flex-col justify-between p-space-xl lg:p-space-2xl bg-surface-container-lowest">
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-1.5 text-outline font-label-sm text-label-sm">
+                        </div>
+                    </div>
+
+                    <div class="my-auto py-space-md max-w-md w-full mx-auto space-y-space-lg">
+                        <div class="space-y-space-2xs text-left">
+                            <h2 class="font-headline-lg text-headline-lg font-bold text-on-surface">
+                                Masuk ke Akun Anda
+                            </h2>
+                            <p class="font-body-md text-body-md text-on-surface-variant">
+                                Silakan masukkan email kampus atau akun peserta magang terdaftar Anda.
+                            </p>
+                        </div>
+
+                        <form id="loginForm" class="space-y-space-md">
+                            @csrf
+                            <div class="space-y-space-2xs">
+                                <div class="flex items-center justify-between">
+                                    <label class="font-label-lg text-label-lg font-semibold text-on-surface"
+                                        for="email">
+                                        Email Peserta / Kampus
+                                    </label>
+                                </div>
+                                <div class="relative flex items-center">
+                                    <span
+                                        class="absolute left-3.5 text-outline material-symbols-outlined text-xl pointer-events-none">
+                                        mail
+                                    </span>
+                                    <input
+                                        class="w-full pl-11 pr-4 py-2.5 rounded-lg bg-surface-bright text-on-surface font-body-md text-body-md placeholder:text-outline-variant focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-lowest transition-all shadow-sm"
+                                        id="email" name="email" placeholder="nama.mahasiswa@student.ac.id"
+                                        type="email" autocomplete="username" required />
+                                </div>
+                            </div>
+                            <div class="space-y-space-2xs">
+                                <div class="flex items-center justify-between">
+                                    <label class="font-label-lg text-label-lg font-semibold text-on-surface"
+                                        for="password">
+                                        Kata Sandi
+                                    </label>
+                                    <span class="text-outline font-body-sm text-body-sm">
+                                        Min. 8 karakter
+                                    </span>
+                                </div>
+                                <div class="relative flex items-center">
+                                    <span
+                                        class="absolute left-3.5 text-outline material-symbols-outlined text-xl pointer-events-none">
+                                        lock
+                                    </span>
+                                    <input
+                                        class="w-full pl-11 pr-12 py-2.5 rounded-lg bg-surface-bright text-on-surface font-body-md text-body-md placeholder:text-outline-variant focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-lowest transition-all shadow-sm"
+                                        id="password" name="password" placeholder="Masukkan kata sandi"
+                                        type="password" autocomplete="current-password" required />
+                                    <button aria-label="Toggle kata sandi"
+                                        class="absolute right-3.5 text-outline hover:text-on-surface flex items-center justify-center p-1 rounded transition-colors"
+                                        id="toggle-password" type="button">
+                                        <span class="material-symbols-outlined text-xl"
+                                            id="eye-icon">visibility</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between pt-1">
+                                <label class="flex items-center space-x-2.5 cursor-pointer select-none">
+                                    <input id="remember"
+                                        class="w-4 h-4 rounded bg-surface-container text-primary accent-primary focus:ring-0 cursor-pointer"
+                                        type="checkbox" />
+                                    <span class="font-body-md text-body-md text-on-surface">Ingat Saya</span>
+                                </label>
+                                <a class="font-label-lg text-label-lg font-semibold text-secondary hover:text-primary transition-colors"
+                                    href="javascript:void(0)">
+                                    Lupa Password?
+                                </a>
+                            </div>
+
+                            <div id="loginError"
+                                class="hidden bg-error-container text-on-error-container font-body-sm text-body-sm rounded-lg px-4 py-2.5">
+                            </div>
+
+                            <button id="loginBtn"
+                                class="w-full py-3 px-space-md rounded-lg bg-primary hover:bg-primary-container active:scale-[0.99] text-on-primary font-headline-sm text-headline-sm font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                                type="submit">
+                                <span id="btnText">Masuk Sekarang</span>
+                                <svg id="btnSpinner" class="hidden animate-spin h-5 w-5 text-on-primary" fill="none"
+                                    viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                <span id="btnIcon"
+                                    class="material-symbols-outlined text-xl transition-transform group-hover:translate-x-1">
+                                    arrow_forward
+                                </span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- POPUP LOGIN BERHASIL -->
+    <div id="successModal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div id="successCard"
+            class="bg-surface-container-lowest rounded-2xl shadow-2xl p-space-2xl flex flex-col items-center space-y-space-md scale-90 opacity-0 transition-all duration-300 mx-4">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary text-4xl"
+                    style="font-variation-settings: 'FILL' 1;">
+                    check_circle
                 </span>
-
-                <div class="brand-headline">
-                    <h1>Monitoring Absensi Peserta Magang</h1>
-                    <p>Catat kehadiran, lihat riwayat presensi, dan pantau status magang dalam satu sistem.</p>
-                </div>
-
-                <div class="brand-feature-grid">
-                    <div class="brand-feature">
-                        <div class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21Z" stroke="white" stroke-width="1.6"/>
-                                <circle cx="12" cy="9.5" r="2.3" stroke="white" stroke-width="1.6"/>
-                            </svg>
-                        </div>
-                        <strong>Verifikasi Lokasi</strong>
-                        <span>Absen dicatat sesuai titik lokasi kantor</span>
-                    </div>
-                    <div class="brand-feature">
-                        <div class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="3" y="4" width="18" height="17" rx="2" stroke="white" stroke-width="1.6"/>
-                                <path d="M3 9h18M8 2v4M16 2v4" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <strong>Riwayat Absensi</strong>
-                        <span>Semua catatan kehadiran tersimpan rapi</span>
-                    </div>
-                    <div class="brand-feature">
-                        <div class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 17l4-4 4 4 6-8" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M14 5h4v4" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <strong>Rekap &amp; Monitoring</strong>
-                        <span>Pembimbing dapat memantau kehadiran</span>
-                    </div>
-                </div>
             </div>
-
-            <div class="brand-footer">
-                <span>&copy; {{ date('Y') }} Portal Magang. Seluruh hak cipta dilindungi.</span>
-            </div>
+            <p class="font-headline-sm text-headline-sm font-semibold text-on-surface">Login Berhasil!</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Mengalihkan ke dashboard...</p>
         </div>
-
-        {{--PANEL KANAN: FORM LOGIN --}}
-        <div class="form-panel">
-            <div class="form-panel-top">
-                <span class="role-pill">Login Peserta / Pembimbing</span>
-            </div>
-
-            <div class="form-heading">
-                <h2>Masuk ke Akun Anda</h2>
-                <p>Gunakan email dan kata sandi yang telah didaftarkan oleh admin.</p>
-            </div>
-
-            @if ($errors->has('email') && !$errors->has('password') && session('login_failed'))
-                <div class="alert-error">
-                    Email atau kata sandi yang Anda masukkan tidak sesuai. Silakan periksa kembali.
-                </div>
-            @endif
-
-            <form method="POST" action="{{ route('login') }}" novalidate>
-                @csrf
-
-                {{-- Email --}}
-                <div class="field-group">
-                    <div class="field-label-row">
-                        <label class="field-label" for="email">Email</label>
-                    </div>
-                    <div class="input-wrap">
-                        <svg class="field-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/>
-                            <path d="M3 7l9 6 9-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value="{{ old('email') }}"
-                            placeholder="nama@kampus.ac.id"
-                            class="{{ $errors->has('email') ? 'has-error' : '' }}"
-                            autocomplete="username"
-                            required
-                            autofocus
-                        >
-                    </div>
-                    @error('email')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Password --}}
-                <div class="field-group">
-                    <div class="field-label-row">
-                        <label class="field-label" for="password">Kata Sandi</label>
-                    </div>
-                    <div class="input-wrap">
-                        <svg class="field-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/>
-                            <path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.6"/>
-                        </svg>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            placeholder="Masukkan kata sandi"
-                            class="{{ $errors->has('password') ? 'has-error' : '' }}"
-                            autocomplete="current-password"
-                            required
-                        >
-                        <button type="button" class="toggle-password" id="togglePasswordBtn" aria-label="Tampilkan kata sandi">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" stroke="currentColor" stroke-width="1.6"/>
-                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
-                            </svg>
-                        </button>
-                    </div>
-                    @error('password')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="row-between">
-                    <label class="remember-check">
-                        <input type="checkbox" name="remember" id="remember">
-                        Ingat saya
-                    </label>
-                    {{-- Rute lupa password bersifat opsional --}}
-                    <a href="#" class="link-muted">Lupa kata sandi?</a>
-                </div>
-
-                <button type="submit" class="btn-primary">
-                    Masuk
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-            </form>
-
-            <div class="help-box">
-                <div class="icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
-                        <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <div>
-                    <strong>Butuh bantuan akun?</strong>
-                    <span>Hubungi pembimbing lapangan atau admin sistem jika lupa akun atau mengalami kendala login.</span>
-                </div>
-            </div>
-        </div>
-
     </div>
-</div>
 
-<script>
-    document.getElementById('togglePasswordBtn').addEventListener('click', function () {
-        const input = document.getElementById('password');
-        const isHidden = input.type === 'password';
-        input.type = isHidden ? 'text' : 'password';
-        this.setAttribute('aria-label', isHidden ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
-    });
-</script>
+    <script>
+        (function () {
+            // Toggle lihat/sembunyikan password
+            const passwordInput = document.getElementById('password');
+            const toggleBtn = document.getElementById('toggle-password');
+            const eyeIcon = document.getElementById('eye-icon');
 
+            if (toggleBtn && passwordInput && eyeIcon) {
+                toggleBtn.addEventListener('click', () => {
+                    const isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+                    eyeIcon.textContent = isPassword ? 'visibility_off' : 'visibility';
+                });
+            }
+
+            // Login via AJAX
+            const form = document.getElementById('loginForm');
+            const btn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            const btnIcon = document.getElementById('btnIcon');
+            const errorBox = document.getElementById('loginError');
+            const modal = document.getElementById('successModal');
+            const successCard = document.getElementById('successCard');
+
+            function setLoading(isLoading) {
+                btn.disabled = isLoading;
+                btnText.textContent = isLoading ? 'Memproses...' : 'Masuk Sekarang';
+                btnSpinner.classList.toggle('hidden', !isLoading);
+                btnIcon.classList.toggle('hidden', isLoading);
+            }
+
+            function showError(message) {
+                errorBox.textContent = message;
+                errorBox.classList.remove('hidden');
+            }
+
+            function hideError() {
+                errorBox.classList.add('hidden');
+                errorBox.textContent = '';
+            }
+
+            function showSuccessModal(redirectUrl) {
+                modal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    successCard.classList.remove('scale-90', 'opacity-0');
+                    successCard.classList.add('scale-100', 'opacity-100');
+                });
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 1200);
+            }
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                hideError();
+                setLoading(true);
+
+                const formData = new FormData(form);
+                formData.append('remember', document.getElementById('remember').checked ? '1' : '0');
+
+                try {
+                    const response = await fetch('{{ route('login') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        },
+                        body: formData,
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        showSuccessModal(data.redirect);
+                    } else {
+                        setLoading(false);
+                        showError(data.message || 'Email atau kata sandi tidak sesuai.');
+                    }
+                } catch (err) {
+                    setLoading(false);
+                    showError('Terjadi kesalahan koneksi, silakan coba lagi.');
+                }
+            });
+        })();
+    </script>
 </body>
+
 </html>

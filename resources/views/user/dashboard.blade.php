@@ -1,473 +1,374 @@
-@extends('layouts.app')
+@extends('layouts.App')
 
-@section('title', 'Dashboard — Portal Magang')
+@section('title', 'Dashboard - Sistem Manajemen PKL PLN Icon Plus')
 
-@section('breadcrumb')
-    Dashboard
-@endsection
-
-@section('extra-styles')
-<style>
-    .greeting-card {
-        background: linear-gradient(135deg, var(--brand-700), var(--brand-600));
-        color: white;
-        border-radius: var(--radius-lg);
-        padding: 22px 26px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-    }
-    .greeting-card h1 {
-        font-size: 21px;
-        font-weight: 700;
-        margin: 0 0 6px;
-    }
-    .greeting-card p {
-        font-size: 13px;
-        margin: 0;
-        color: rgba(255,255,255,0.8);
-        max-width: 420px;
-        line-height: 1.5;
-    }
-    .dash-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-
-    .card {
-        background: var(--surface-card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius-lg);
-        padding: 18px 20px;
-    }
-
-    .card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 14px;
-        gap: 8px;
-    }
-    .card-header h3 {
-        font-size: 14px;
-        font-weight: 600;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 7px;
-    }
-    .card-header h3 svg { width: 16px; height: 16px; color: var(--brand-700); }
-
-    .badge {
-        font-size: 11px;
-        font-weight: 600;
-        padding: 3px 9px;
-        border-radius: 999px;
-        white-space: nowrap;
-    }
-    .badge.amber { background: var(--amber-bg); color: var(--amber-text); }
-    .badge.green { background: var(--green-bg); color: var(--green-text); }
-    .badge.blue { background: var(--blue-bg); color: var(--blue-text); }
-
-    .identity-row {
-        display: flex;
-        gap: 14px;
-        margin-bottom: 16px;
-    }
-    .identity-avatar {
-        width: 52px;
-        height: 52px;
-        border-radius: 999px;
-        background: var(--brand-100);
-        color: var(--brand-700);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 18px;
-        flex-shrink: 0;
-    }
-    .identity-name { font-size: 15px; font-weight: 700; margin: 0 0 3px; }
-    .identity-nim { font-size: 12.5px; color: var(--ink-500); margin: 0; }
-
-    .identity-meta {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        padding-top: 14px;
-        border-top: 1px solid var(--line);
-    }
-    .identity-meta-item span {
-        display: block;
-        font-size: 11px;
-        color: var(--ink-300);
-        margin-bottom: 3px;
-    }
-    .identity-meta-item strong {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--ink-900);
-    }
-    .presensi-meta {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 14px;
-    }
-    .presensi-meta-item span {
-        display: block;
-        font-size: 11px;
-        color: var(--ink-300);
-        margin-bottom: 3px;
-    }
-    .presensi-meta-item strong {
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    .presensi-status-box {
-        background: var(--surface);
-        border-radius: var(--radius-md);
-        padding: 10px 12px;
-        font-size: 12px;
-        color: var(--ink-700);
-        margin-bottom: 14px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .presensi-status-box svg { width: 15px; height: 15px; color: var(--brand-600); flex-shrink: 0; }
-
-    .btn-primary-full {
-        width: 100%;
-        background: var(--brand-700);
-        color: white;
-        border: none;
-        padding: 12px 16px;
-        border-radius: var(--radius-sm);
-        font-size: 14px;
-        font-weight: 600;
-        font-family: inherit;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        text-decoration: none;
-    }
-    .btn-primary-full:hover { background: var(--brand-800); }
-    .btn-primary-full svg { width: 15px; height: 15px; }
-
-    .stat-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 14px;
-        margin-bottom: 20px;
-    }
-    .stat-card {
-        background: var(--surface-card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius-lg);
-        padding: 16px 18px;
-    }
-    .stat-card-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 10px;
-    }
-    .stat-card-top span {
-        font-size: 12.5px;
-        color: var(--ink-500);
-        font-weight: 500;
-    }
-    .stat-icon {
-        width: 26px;
-        height: 26px;
-        border-radius: 8px;
-        background: var(--brand-100);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .stat-icon svg { width: 13px; height: 13px; color: var(--brand-700); }
-    .stat-value {
-        font-size: 24px;
-        font-weight: 700;
-        margin: 0 0 4px;
-    }
-    .stat-caption {
-        font-size: 11.5px;
-        color: var(--ink-300);
-    }
-    .stat-caption.warn { color: var(--red-text); }
-    .activity-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .activity-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 12px;
-        border: 1px solid var(--line);
-        border-radius: var(--radius-md);
-    }
-    .activity-icon {
-        width: 30px;
-        height: 30px;
-        border-radius: 8px;
-        background: var(--surface);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-    .activity-icon svg { width: 14px; height: 14px; color: var(--ink-500); }
-    .activity-body { flex: 1; min-width: 0; }
-    .activity-top-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 4px;
-        flex-wrap: wrap;
-    }
-    .activity-code { font-size: 12.5px; font-weight: 700; }
-    .activity-title {
-        font-size: 13px;
-        color: var(--ink-700);
-        margin: 0 0 4px;
-        line-height: 1.4;
-    }
-    .activity-date { font-size: 11.5px; color: var(--ink-300); }
-    .activity-link {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--brand-700);
-        text-decoration: none;
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-
-    .card-footer-link {
-        font-size: 12.5px;
-        font-weight: 600;
-        color: var(--brand-700);
-        text-decoration: none;
-    }
-
-    .dummy-notice {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--blue-bg);
-        color: var(--blue-text);
-        font-size: 12px;
-        padding: 10px 14px;
-        border-radius: var(--radius-sm);
-        margin-bottom: 20px;
-    }
-    .dummy-notice svg { width: 15px; height: 15px; flex-shrink: 0; }
-
-    @media (max-width: 900px) {
-        .dash-grid { grid-template-columns: 1fr; }
-        .stat-grid { grid-template-columns: 1fr 1fr; }
-        .greeting-card { padding: 18px; }
-        .identity-meta { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 480px) {
-        .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-        .greeting-actions { width: 100%; }
-        .btn-ghost-light { flex: 1; justify-content: center; }
-    }
-</style>
-@endsection
+@section('breadcrumb', 'Dashboard')
 
 @section('content')
-
-    <div class="greeting-card">
-        <div>
-            <h1>Selamat datang, {{ $userName ?? 'Nama Peserta' }} 👋</h1>
-            <p>{{ $today ?? now()->translatedFormat('l, d F Y') }} — Semoga hari magangmu berjalan lancar.</p>
+<div class="flex flex-col w-full gap-space-lg">
+    <section
+        class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+        <div class="flex flex-col gap-space-2xs">
+            <div class="flex items-center gap-space-xs">
+                <span
+                    class="font-label-sm text-label-sm uppercase tracking-widest text-primary font-bold">Ringkasan
+                    Mahasiswa PKL</span>
+                <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+                <span class="font-label-sm text-label-sm text-on-surface-variant font-medium">{{ $kampus ?? 'PLN Icon Plus KP Jember' }}</span>
+            </div>
+            <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Selamat datang,
+                {{ \Illuminate\Support\Str::of($userName ?? 'Peserta')->before(' ') }} 👋</h1>
+            <p
+                class="font-body-md text-body-md text-on-surface-variant flex items-center gap-space-2xs flex-wrap">
+                <span class="font-semibold text-on-surface">{{ $today ?? now()->translatedFormat('l, d F Y') }}</span>
+                <span>•</span>
+                <span>Semangat berkarya dan selalu utamakan keselamatan kerja (K3) di lingkungan PLN Icon
+                    Plus Jember</span>
+            </p>
         </div>
-    </div>
-
-    <div class="dash-grid">
-
-        <div class="card">
-            <div class="card-header">
-                <h3>
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c0-3.5 3.2-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                    Identitas Peserta
-                </h3>
-                <span class="badge green">Aktif &middot; Pekan ke-5</span>
-            </div>
-
-            <div class="identity-row">
-                <div class="identity-avatar">{{ $initials ?? 'RA' }}</div>
-                <div>
-                    <p class="identity-name">{{ $userName ?? 'Nama Peserta' }}</p>
-                    <p class="identity-nim">NIM: {{ $nim ?? '240810101052' }}</p>
+    </section>
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-space-md">
+        <div
+            class="lg:col-span-7 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between gap-space-md">
+            <div
+                class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-sm pb-space-sm border-b border-surface-container">
+                <div class="flex items-center gap-space-2xs text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[18px] text-primary">badge</span>
+                    <span class="font-label-sm text-label-sm uppercase tracking-wider font-bold">Identitas
+                        Resmi Peserta PKL</span>
+                </div>
+                <div class="flex items-center gap-space-xs">
+                    <span
+                        class="px-space-xs py-1 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-semibold">
+                        Divisi: {{ $divisi ?? '-' }}
+                    </span>
                 </div>
             </div>
-
-            <div class="identity-meta">
-                <div class="identity-meta-item">
-                    <span>Periode Magang</span>
-                    <strong>{{ $periodeMagang ?? '01 Agu 2026 – 30 Sep 2026' }}</strong>
+            <div class="flex flex-col md:flex-row gap-space-md items-start md:items-center">
+                <div class="relative shrink-0">
+                    <img alt="Foto Profil Mahasiswa {{ $userName ?? 'Peserta PKL' }}"
+                        class="w-24 h-24 rounded-full object-cover shadow-sm bg-surface-container"
+                        src="https://lh3.googleusercontent.com/aida/AEtjO1XqCy6QiwsxhGKymn_BEvHBjZIgfF4SIvAuS7ZPUoxWv41O7Dz2GgseftuWi4esTira4FZvkNrQLYyWUBJ9EUsSh-mMXG37P8VsNdYOGLIeYBmc5fbroFb6mS6R6Yl3XlCqs4Y842tVdq5C_ohR-mI-gR-aPIeWIGAdZkWGDbvVjsfAbwWOZ-mrIjrwbBsanvjDCTLBSai48IEJbWhP0AQgyR7GBIpQQLuk2vreuz4M7Kyy-hWkt2stWw" />
+                    <span
+                        class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md">
+                        <span class="material-symbols-outlined text-[14px]">check</span>
+                    </span>
                 </div>
-                <div class="identity-meta-item">
-                    <span>Divisi / Penugasan</span>
-                    <strong>{{ $divisi ?? 'Belum ditentukan' }}</strong>
+                <div class="flex flex-col gap-space-2xs min-w-0 flex-1">
+                    <div class="flex items-center gap-space-xs flex-wrap">
+                        <h2 class="font-headline-md text-headline-md text-on-surface font-bold">{{ $userName ?? 'Nama Peserta' }}</h2>
+                        <span
+                            class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono">NIM:
+                            {{ $nim ?? '-' }}</span>
+                    </div>
+                    <div class="text-on-surface-variant font-body-sm text-body-sm flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px] text-secondary">school</span>
+                        <span class="font-medium text-on-surface">{{ $kampus ?? '-' }}</span>
+                    </div>
+                    <div class="text-on-surface-variant font-body-sm text-body-sm flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px] text-tertiary">date_range</span>
+                        <span>Periode PKL: <span class="font-semibold text-on-surface">{{ $periodeMagang ?? '-' }}</span></span>
+                    </div>
                 </div>
-                <div class="identity-meta-item">
-                    <span>Pembimbing Lapangan</span>
-                    <strong>{{ $pembimbing ?? 'Belum ditentukan' }}</strong>
+            </div>
+            <div
+                class="grid grid-cols-1 md:grid-cols-2 gap-space-sm p-space-sm rounded-lg bg-surface-container-low">
+                <div class="flex items-center gap-space-xs">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center text-primary shadow-xs">
+                        <span class="material-symbols-outlined text-[18px]">supervisor_account</span>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">Pembimbing
+                            Lapangan</span>
+                        <span
+                            class="font-label-md text-label-md text-on-surface font-semibold truncate">{{ $pembimbing ?? '-' }}</span>
+                        <span class="font-label-sm text-label-sm text-outline truncate">Spv. Pemeliharaan
+                            &amp; Operasi</span>
+                    </div>
                 </div>
-                <div class="identity-meta-item">
-                    <span>Asal Kampus</span>
-                    <strong>{{ $kampus ?? 'Belum diisi' }}</strong>
+                <div class="flex items-center gap-space-xs">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary shadow-xs">
+                        <span class="material-symbols-outlined text-[18px]">lock</span>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">Kelompok &amp;
+                            Penugasan</span>
+                        <span
+                            class="font-label-md text-label-md text-on-surface font-semibold truncate">Divisi:
+                            {{ $divisi ?? '-' }}</span>
+                        <span class="font-label-sm text-label-sm text-outline truncate">Ditentukan oleh
+                            Admin PLN</span>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h3>
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                    Presensi Hari Ini
-                </h3>
-                <span class="badge amber">Belum Check-in</span>
-            </div>
-
-            <div class="presensi-meta">
-                <div class="presensi-meta-item">
-                    <span>Jam Kerja Normal</span>
-                    <strong>08:00 – 17:00 WIB</strong>
+        <div class="lg:col-span-5 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between gap-space-md"
+            id="absensi-card">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-space-xs">
+                    <span class="material-symbols-outlined text-[20px] text-tertiary">search_off</span>
+                    <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Presensi Hari
+                        Ini</h2>
                 </div>
-                <div class="presensi-meta-item">
-                    <span>Toleransi s/d</span>
-                    <strong>08:15 WIB</strong>
+                <span
+                    class="px-space-xs py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm font-bold flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span> Belum Check-in
+                </span>
+            </div>
+            <div class="grid grid-cols-2 gap-space-xs">
+                <div class="p-space-xs rounded-lg bg-surface-container-low flex flex-col gap-0.5">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">Jam Kerja
+                        Normal</span>
+                    <span class="font-label-md text-label-md text-on-surface font-bold">08:00 – 17:00
+                        WIB</span>
+                    <span class="font-label-sm text-label-sm text-outline">Toleransi s/d 08:15</span>
+                </div>
+                <div class="p-space-xs rounded-lg bg-surface-container-low flex flex-col gap-0.5">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">Lokasi Target</span>
+                    <span class="font-label-md text-label-md text-on-surface font-bold truncate">PLN Icon
+                        Plus Jember</span>
+                    <span class="font-label-sm text-label-sm text-primary font-semibold">Radius Kantor
+                        100m</span>
                 </div>
             </div>
-
-            <div class="presensi-status-box">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="9.5" r="2.3" stroke="currentColor" stroke-width="1.6"/></svg>
-                Verifikasi lokasi akan dilakukan saat Anda menekan tombol Check-in.
+            <div
+                class="flex items-center justify-between p-space-xs rounded-lg bg-primary-fixed/20 text-on-primary-fixed-variant">
+                <div class="flex items-center gap-space-xs">
+                    <span class="material-symbols-outlined text-primary text-[18px]">near_me</span>
+                    <div class="flex flex-col">
+                        <span class="font-label-sm text-label-sm font-bold text-on-primary-fixed">GPS
+                            Terkunci: Radius 42m</span>
+                        <span class="font-body-sm text-body-sm text-on-surface-variant">Sesuai perimeter
+                            geofence kantor</span>
+                    </div>
+                </div>
+                <span
+                    class="px-2 py-0.5 rounded bg-surface-container-lowest text-primary font-label-sm text-label-sm font-bold shadow-xs">Akurat</span>
             </div>
-
-            <a href="{{ route('absensi') }}" class="btn-primary-full">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.8"/></svg>
-                Ambil Presensi Sekarang (Check-in)
+            <div
+                class="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm px-1">
+                <span>Check-in Terakhir:</span>
+                <span class="font-medium text-on-surface">Kemarin (04 Sep), 07:55 WIB • Hadir</span>
+            </div>
+            <a href="{{ route('absensi') }}"
+                class="w-full py-3 px-space-md rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-space-xs">
+                <span class="material-symbols-outlined text-[20px]">photo_camera_front</span>
+                <span>Ambil Presensi Sekarang (Check-in)</span>
             </a>
         </div>
-    </div>
-
-    <div class="stat-grid">
-        <div class="stat-card">
-            <div class="stat-card-top">
-                <span>Ticket Aktif</span>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/></svg>
-                </div>
+    </section>
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+        <div
+            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">
+            <div class="flex items-center justify-between">
+                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Ticket
+                    Aktif</span>
+                <span
+                    class="w-8 h-8 rounded-lg bg-secondary-fixed text-on-secondary-fixed-variant flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[18px]">assignment_late</span>
+                </span>
             </div>
-            <p class="stat-value">2</p>
-            <p class="stat-caption">Sedang dikerjakan</p>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-top">
-                <span>Ticket Selesai</span>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
+            <div class="flex items-baseline justify-between pt-1">
+                <span class="font-stat-counter text-stat-counter font-bold text-on-surface">2</span>
+                <span
+                    class="px-space-xs py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-bold">
+                    Sedang Dikerjakan
+                </span>
             </div>
-            <p class="stat-value">18</p>
-            <p class="stat-caption">Bulan ini</p>
+            <span class="font-body-sm text-body-sm text-outline">Target penyelesaian hari ini</span>
         </div>
-        <div class="stat-card">
-            <div class="stat-card-top">
-                <span>Perlu Revisi</span>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10.3 3.9 2.7 17a1.6 1.6 0 0 0 1.4 2.4h15.8a1.6 1.6 0 0 0 1.4-2.4L13.7 3.9a1.6 1.6 0 0 0-2.8 0Z" stroke="currentColor" stroke-width="1.6"/></svg>
-                </div>
+        <div
+            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">
+            <div class="flex items-center justify-between">
+                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Ticket
+                    Selesai</span>
+                <span
+                    class="w-8 h-8 rounded-lg bg-primary-fixed text-on-primary-fixed-variant flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[18px]">task_alt</span>
+                </span>
             </div>
-            <p class="stat-value">1</p>
-            <p class="stat-caption warn">Butuh perbaikan segera</p>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-top">
-                <span>Aktivitas Tercatat</span>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 4h11l3 3v13H5V4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-                </div>
+            <div class="flex items-baseline justify-between pt-1">
+                <span class="font-stat-counter text-stat-counter font-bold text-primary">18</span>
+                <span
+                    class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">
+                    Bulan Ini
+                </span>
             </div>
-            <p class="stat-value">14</p>
-            <p class="stat-caption">Pekan ini</p>
+            <span class="font-body-sm text-body-sm text-outline">Tervalidasi mentor &amp; supervisor</span>
         </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h3>
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/></svg>
-                Ticket Penugasan Terbaru
-            </h3>
-            <a href="#" class="card-footer-link">Lihat Semua &rarr;</a>
+        <div
+            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">
+            <div class="flex items-center justify-between">
+                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Ticket
+                    Revisi</span>
+                <span
+                    class="w-8 h-8 rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[18px]">rate_review</span>
+                </span>
+            </div>
+            <div class="flex items-baseline justify-between pt-1">
+                <span class="font-stat-counter text-stat-counter font-bold text-tertiary">1</span>
+                <span
+                    class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
+                    Perlu Cek Segera
+                </span>
+            </div>
+            <span class="font-body-sm text-body-sm text-error font-medium truncate">Butuh foto ulang
+                dokumentasi drop core</span>
         </div>
-
-        <div class="activity-list">
-            <div class="activity-item">
-                <div class="activity-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21Z" stroke="currentColor" stroke-width="1.6"/></svg>
+        <div
+            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">
+            <div class="flex items-center justify-between">
+                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Aktivitas
+                    Tercatat</span>
+                <span
+                    class="w-8 h-8 rounded-lg bg-surface-container-highest text-on-surface flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[18px]">history_edu</span>
+                </span>
+            </div>
+            <div class="flex items-baseline justify-between pt-1">
+                <span class="font-stat-counter text-stat-counter font-bold text-on-surface">14</span>
+                <span
+                    class="px-space-xs py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-bold">
+                    Pekan Ini
+                </span>
+            </div>
+            <span class="font-body-sm text-body-sm text-outline">Sinkron otomatis dengan logbook</span>
+        </div>
+    </section>
+    <section class="grid grid-cols-1 gap-space-md">
+        <div
+            class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-space-xs">
+                    <span
+                        class="material-symbols-outlined text-primary text-[20px]">confirmation_number</span>
+                    <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Tiket Penugasan
+                        Terbaru</h2>
                 </div>
-                <div class="activity-body">
-                    <div class="activity-top-row">
-                        <span class="activity-code">TKT-0001</span>
-                        <span class="badge blue">On Progress</span>
+                <a class="font-label-md text-label-md text-primary hover:text-primary-container font-bold flex items-center gap-1 transition-colors"
+                    href="#">
+                    Lihat Semua (20)
+                    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-xs">
+                <div
+                    class="p-space-sm rounded-xl bg-surface-bright hover:bg-surface-container-low transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
+                    <div class="flex items-start gap-space-sm min-w-0">
+                        <div
+                            class="w-9 h-9 rounded-lg bg-surface-container-high text-primary flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-[18px]">build</span>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-center gap-space-xs flex-wrap">
+                                <span
+                                    class="font-label-sm text-label-sm font-bold text-on-surface font-mono">TKT-00025</span>
+                                <span
+                                    class="px-2 py-0.5 rounded text-xs bg-surface-container font-medium text-on-surface-variant">Maintenance</span>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant font-label-sm text-label-sm font-bold">Verified</span>
+                            </div>
+                            <p class="font-body-sm text-body-sm text-on-surface font-medium truncate pt-1">
+                                Menyiapkan material gangguan untuk tim Servpo IKR</p>
+                            <span class="font-label-sm text-label-sm text-outline">Tanggal: 05 Sep 2026 •
+                                09:15 WIB</span>
+                        </div>
                     </div>
-                    <p class="activity-title">Contoh judul ticket penugasan (data dummy)</p>
-                    <span class="activity-date">Tanggal: 05 Sep 2026</span>
+                    <a class="sm:self-center shrink-0 px-space-xs py-1 rounded bg-surface-container-lowest font-label-sm text-label-sm text-primary font-bold shadow-xs hover:bg-primary hover:text-on-primary transition-all flex items-center gap-1 justify-center"
+                        href="#">
+                        Detail <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </a>
                 </div>
-                <a href="#" class="activity-link">Detail &rarr;</a>
-            </div>
-
-            <div class="activity-item">
-                <div class="activity-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                </div>
-                <div class="activity-body">
-                    <div class="activity-top-row">
-                        <span class="activity-code">TKT-0002</span>
-                        <span class="badge amber">Perlu Revisi</span>
+                <div
+                    class="p-space-sm rounded-xl bg-surface-bright hover:bg-surface-container-low transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
+                    <div class="flex items-start gap-space-sm min-w-0">
+                        <div
+                            class="w-9 h-9 rounded-lg bg-secondary-fixed text-on-secondary-fixed-variant flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-[18px]">hub</span>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-center gap-space-xs flex-wrap">
+                                <span
+                                    class="font-label-sm text-label-sm font-bold text-on-surface font-mono">TKT-00026</span>
+                                <span
+                                    class="px-2 py-0.5 rounded text-xs bg-surface-container font-medium text-on-surface-variant">Network</span>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-bold">On
+                                    Progress</span>
+                            </div>
+                            <p class="font-body-sm text-body-sm text-on-surface font-medium truncate pt-1">
+                                Pengecekan terminasi Optical Distribution Cabinet (ODC)</p>
+                            <span class="font-label-sm text-label-sm text-outline">Tanggal: 04 Sep 2026 •
+                                13:45 WIB</span>
+                        </div>
                     </div>
-                    <p class="activity-title">Contoh judul ticket lain yang butuh perbaikan (data dummy)</p>
-                    <span class="activity-date">Tanggal: 04 Sep 2026</span>
+                    <a class="sm:self-center shrink-0 px-space-xs py-1 rounded bg-surface-container-lowest font-label-sm text-label-sm text-primary font-bold shadow-xs hover:bg-primary hover:text-on-primary transition-all flex items-center gap-1 justify-center"
+                        href="#">
+                        Detail <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </a>
                 </div>
-                <a href="#" class="activity-link">Perbaiki &rarr;</a>
-            </div>
-
-            <div class="activity-item">
-                <div class="activity-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <div class="activity-body">
-                    <div class="activity-top-row">
-                        <span class="activity-code">TKT-0003</span>
-                        <span class="badge green">Selesai</span>
+                <div
+                    class="p-space-sm rounded-xl bg-error-container/20 hover:bg-error-container/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
+                    <div class="flex items-start gap-space-sm min-w-0">
+                        <div
+                            class="w-9 h-9 rounded-lg bg-error-container text-on-error-container flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-[18px]">warning</span>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-center gap-space-xs flex-wrap">
+                                <span
+                                    class="font-label-sm text-label-sm font-bold text-on-surface font-mono">TKT-00027</span>
+                                <span
+                                    class="px-2 py-0.5 rounded text-xs bg-surface-container font-medium text-on-surface-variant">Installation</span>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-error text-on-error font-label-sm text-label-sm font-bold">Revision</span>
+                            </div>
+                            <p class="font-body-sm text-body-sm text-on-surface font-medium truncate pt-1">
+                                Dokumentasi perapian kabel Drop Core Pelanggan</p>
+                            <span
+                                class="font-label-sm text-label-sm text-error font-semibold flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">info</span>
+                                Catatan Mentor: Lampiran foto buram, unggah ulang foto label OTB
+                            </span>
+                        </div>
                     </div>
-                    <p class="activity-title">Contoh judul ticket yang telah selesai dikerjakan (data dummy)</p>
-                    <span class="activity-date">Tanggal: 03 Sep 2026</span>
+                    <a class="sm:self-center shrink-0 px-space-sm py-1 rounded bg-error text-on-error font-label-sm text-label-sm font-bold shadow-xs hover:bg-on-error-container transition-all flex items-center gap-1 justify-center"
+                        href="#">
+                        Perbaiki <span class="material-symbols-outlined text-[14px]">edit</span>
+                    </a>
                 </div>
-                <a href="#" class="activity-link">Detail &rarr;</a>
+                <div
+                    class="p-space-sm rounded-xl bg-surface-bright hover:bg-surface-container-low transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
+                    <div class="flex items-start gap-space-sm min-w-0">
+                        <div
+                            class="w-9 h-9 rounded-lg bg-surface-container-high text-primary flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-[18px]">settings_ethernet</span>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-center gap-space-xs flex-wrap">
+                                <span
+                                    class="font-label-sm text-label-sm font-bold text-on-surface font-mono">TKT-00024</span>
+                                <span
+                                    class="px-2 py-0.5 rounded text-xs bg-surface-container font-medium text-on-surface-variant">Maintenance</span>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">Done</span>
+                            </div>
+                            <p class="font-body-sm text-body-sm text-on-surface font-medium truncate pt-1">
+                                Pengukuran redaman kabel fiber optik OTB Segmen Barat</p>
+                            <span class="font-label-sm text-label-sm text-outline">Tanggal: 03 Sep 2026 •
+                                15:20 WIB</span>
+                        </div>
+                    </div>
+                    <a class="sm:self-center shrink-0 px-space-xs py-1 rounded bg-surface-container-lowest font-label-sm text-label-sm text-primary font-bold shadow-xs hover:bg-primary hover:text-on-primary transition-all flex items-center gap-1 justify-center"
+                        href="#">
+                        Detail <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
-
+    </section>
+</div>
 @endsection

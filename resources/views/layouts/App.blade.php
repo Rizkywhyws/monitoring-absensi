@@ -1,419 +1,435 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>@yield('title', 'Portal Magang')</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
     <style>
-        :root {
-            --brand-900: #0b3b32;
-            --brand-800: #0f5145;
-            --brand-700: #146b5a;
-            --brand-600: #16806a;
-            --brand-500: #1a9678;
-            --brand-100: #e3f3ee;
+        @layer base {
 
-            --ink-900: #16211f;
-            --ink-700: #445350;
-            --ink-500: #6d7a77;
-            --ink-300: #a9b3b1;
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
 
-            --surface: #f4f6f5;
-            --surface-card: #ffffff;
-            --line: #e5eae8;
+            body {
+                overscroll-behavior: none;
+            }
 
-            --amber-bg: #fdf3e3;
-            --amber-text: #92620a;
-            --green-bg: #e6f6ee;
-            --green-text: #0f7a4c;
-            --red-bg: #fdeceb;
-            --red-text: #c4392f;
-            --blue-bg: #eaf1fb;
-            --blue-text: #2a5fa5;
+            main>:first-child {
+                margin-top: 0 !important;
+            }
 
-            --radius-lg: 18px;
-            --radius-md: 12px;
-            --radius-sm: 8px;
+            main>:last-child {
+                margin-bottom: 0 !important;
+            }
         }
 
-        * { box-sizing: border-box; }
-        html, body {
-            margin: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--surface);
-            color: var(--ink-900);
-        }
-
-        a { color: inherit; }
-
-        .app-shell {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            min-height: 100vh;
+        ::-webkit-scrollbar {
+            display: none;
         }
 
         .sidebar-backdrop {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(11, 59, 50, 0.35);
-        z-index: 30;
-        }
-        .sidebar-backdrop.is-open { display: block; }
-        .sidebar {
-            background: var(--surface-card);
-            border-right: 1px solid var(--line);
-            display: flex;
-            flex-direction: column;
-            padding: 20px 16px;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-        }
-
-        .sidebar-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 8px 20px;
-            border-bottom: 1px solid var(--line);
-            margin-bottom: 16px;
-        }
-        .sidebar-logo-mark {
-            width: 32px;
-            height: 32px;
-            border-radius: 9px;
-            background: var(--brand-700);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .sidebar-logo-mark svg { width: 17px; height: 17px; }
-        .sidebar-logo-text {
-            font-weight: 700;
-            font-size: 14px;
-            line-height: 1.25;
-        }
-        .sidebar-logo-text small {
-            display: block;
-            font-weight: 500;
-            font-size: 10.5px;
-            color: var(--ink-500);
-        }
-
-        .nav-group-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--ink-300);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            padding: 0 10px;
-            margin-bottom: 8px;
-        }
-
-        .nav-list {
-            list-style: none;
-            margin: 0 0 20px;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .nav-item a {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 10px;
-            border-radius: var(--radius-sm);
-            font-size: 13.5px;
-            font-weight: 500;
-            color: var(--ink-700);
-            text-decoration: none;
-            transition: background 0.15s ease, color 0.15s ease;
-        }
-        .nav-item a svg { width: 17px; height: 17px; flex-shrink: 0; }
-        .nav-item a:hover { background: var(--surface); }
-
-        .nav-item.active a {
-            background: var(--brand-700);
-            color: white;
-        }
-
-        .nav-item .badge-count {
-            margin-left: auto;
-            background: var(--red-text);
-            color: white;
-            font-size: 10.5px;
-            font-weight: 700;
-            padding: 1px 6px;
-            border-radius: 999px;
-            min-width: 18px;
-            text-align: center;
-        }
-        .nav-item.active .badge-count {
-            background: rgba(255,255,255,0.25);
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-            padding-top: 14px;
-            border-top: 1px solid var(--line);
-        }
-
-        .sidebar-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            border-radius: var(--radius-sm);
-        }
-        .sidebar-user-avatar {
-            width: 34px;
-            height: 34px;
-            border-radius: 999px;
-            background: var(--brand-100);
-            color: var(--brand-700);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 13px;
-            flex-shrink: 0;
-        }
-        .sidebar-user-text { flex: 1; min-width: 0; }
-        .sidebar-user-text strong {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .sidebar-user-text span {
-            font-size: 11px;
-            color: var(--ink-500);
-        }
-        .sidebar-user-logout {
-            color: var(--ink-300);
-            flex-shrink: 0;
-        }
-        .sidebar-user-logout svg { width: 16px; height: 16px; }
-
-        .main-area {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 28px;
-            border-bottom: 1px solid var(--line);
-            background: var(--surface-card);
-        }
-
-        .breadcrumb {
-            font-size: 13px;
-            color: var(--ink-500);
-        }
-        .breadcrumb strong { color: var(--ink-900); font-weight: 600; }
-
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .topbar-date {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12.5px;
-            color: var(--ink-500);
-        }
-        .topbar-date svg { width: 14px; height: 14px; }
-
-        .topbar-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 999px;
-            background: var(--brand-700);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 12px;
-        }
-
-        .mobile-menu-btn {
             display: none;
-            border: none;
-            background: none;
-            padding: 4px;
-            cursor: pointer;
         }
-        .mobile-menu-btn svg { width: 22px; height: 22px; }
 
-        .content {
-            padding: 24px 28px 40px;
-            flex: 1;
+        .sidebar-backdrop.is-open {
+            display: block;
         }
 
         @media (max-width: 900px) {
-            .app-shell { grid-template-columns: 1fr; }
-            .sidebar {
+            .app-sidebar {
                 position: fixed;
                 left: 0;
                 top: 0;
-                z-index: 40;
-                width: 250px;
                 transform: translateX(-100%);
                 transition: transform 0.2s ease;
-                box-shadow: 20px 0 40px -20px rgba(0,0,0,0.15);
             }
-            .sidebar.is-open { transform: translateX(0); }
-            .mobile-menu-btn { display: inline-flex; }
-            .topbar { padding: 14px 16px; }
-            .content { padding: 18px 16px 32px; }
-            .breadcrumb { display: none; }
-            .sidebar-backdrop {
-                display: none;
-                position: fixed;
-                inset: 0;
-                background: rgba(11, 59, 50, 0.35);
-                z-index: 30;
-            }
-            .sidebar-backdrop.is-open { display: block; }
-        }
 
-        @media (prefers-reduced-motion: reduce) {
-            * { transition: none !important; }
+            .app-sidebar.is-open {
+                transform: translateX(0);
+            }
+
+            .app-main-area {
+                padding-left: 0 !important;
+            }
+
+            .app-header {
+                left: 0 !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-flex !important;
+            }
         }
     </style>
-
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f2f3ff",
+                        "tertiary-container": "#a36700",
+                        "primary-container": "#00846e",
+                        "on-secondary-fixed": "#001d31",
+                        "on-surface-variant": "#3d4945",
+                        "surface-bright": "#faf8ff",
+                        "inverse-primary": "#5ddbbe",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-surface": "#131b2e",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-secondary-container": "#00476e",
+                        "secondary-fixed-dim": "#93ccff",
+                        "on-primary-fixed": "#00201a",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#dae2fd",
+                        "error": "#ba1a1a",
+                        "inverse-surface": "#283044",
+                        "secondary": "#006398",
+                        "secondary-fixed": "#cce5ff",
+                        "on-tertiary-fixed": "#2a1700",
+                        "surface-tint": "#006b59",
+                        "on-primary-fixed-variant": "#005143",
+                        "inverse-on-surface": "#eef0ff",
+                        "primary-fixed": "#7cf8da",
+                        "surface": "#faf8ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d2d9f4",
+                        "tertiary": "#825100",
+                        "primary-fixed-dim": "#5ddbbe",
+                        "on-tertiary-container": "#fffbff",
+                        "secondary-container": "#5bb8fe",
+                        "on-error-container": "#93000a",
+                        "outline": "#6d7a75",
+                        "surface-container-highest": "#dae2fd",
+                        "on-error": "#ffffff",
+                        "on-background": "#131b2e",
+                        "surface-container-high": "#e2e7ff",
+                        "outline-variant": "#bccac4",
+                        "on-secondary": "#ffffff",
+                        "background": "#faf8ff",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-secondary-fixed-variant": "#004b73",
+                        "surface-container": "#eaedff",
+                        "primary": "#006857",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#f4fffa",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "1rem",
+                        "space-lg": "1.5rem",
+                        "space-xl": "2rem",
+                        "gutter-desktop": "1.5rem",
+                        "margin-tablet": "1.5rem",
+                        "sidebar-collapsed": "80px",
+                        "margin-desktop": "2rem",
+                        "space-md": "1rem",
+                        "space-xs": "0.5rem",
+                        "sidebar-width": "280px",
+                        "space-2xs": "0.25rem",
+                        "space-sm": "0.75rem",
+                        "gutter-mobile": "1rem",
+                        "space-2xl": "2.5rem",
+                        "container-max": "1440px",
+                        "space-3xl": "3rem"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "stat-counter": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-xl-mobile": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", {
+                            "lineHeight": "26px",
+                            "letterSpacing": "0em",
+                            "fontWeight": "400"
+                        }],
+                        "label-md": ["12px", {
+                            "lineHeight": "16px",
+                            "letterSpacing": "0.02em",
+                            "fontWeight": "600"
+                        }],
+                        "headline-lg-mobile": ["22px", {
+                            "lineHeight": "30px",
+                            "letterSpacing": "-0.015em",
+                            "fontWeight": "700"
+                        }],
+                        "body-sm": ["12px", {
+                            "lineHeight": "18px",
+                            "letterSpacing": "0.01em",
+                            "fontWeight": "400"
+                        }],
+                        "headline-lg": ["28px", {
+                            "lineHeight": "36px",
+                            "letterSpacing": "-0.02em",
+                            "fontWeight": "700"
+                        }],
+                        "stat-counter": ["32px", {
+                            "lineHeight": "38px",
+                            "letterSpacing": "-0.02em",
+                            "fontWeight": "700"
+                        }],
+                        "label-sm": ["11px", {
+                            "lineHeight": "14px",
+                            "letterSpacing": "0.04em",
+                            "fontWeight": "700"
+                        }],
+                        "label-lg": ["14px", {
+                            "lineHeight": "20px",
+                            "letterSpacing": "0.01em",
+                            "fontWeight": "600"
+                        }],
+                        "headline-xl-mobile": ["28px", {
+                            "lineHeight": "36px",
+                            "letterSpacing": "-0.02em",
+                            "fontWeight": "700"
+                        }],
+                        "headline-xl": ["36px", {
+                            "lineHeight": "44px",
+                            "letterSpacing": "-0.025em",
+                            "fontWeight": "700"
+                        }],
+                        "headline-sm": ["16px", {
+                            "lineHeight": "24px",
+                            "letterSpacing": "0em",
+                            "fontWeight": "600"
+                        }],
+                        "body-md": ["14px", {
+                            "lineHeight": "22px",
+                            "letterSpacing": "0em",
+                            "fontWeight": "400"
+                        }],
+                        "headline-md": ["20px", {
+                            "lineHeight": "28px",
+                            "letterSpacing": "-0.01em",
+                            "fontWeight": "600"
+                        }]
+                    }
+                },
+            },
+        };
+    </script>
     @yield('extra-styles')
 </head>
-<body>
 
-<div class="app-shell">
-    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<body
+    class="bg-background font-body-md text-body-md text-on-surface antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+    <div class="sidebar-backdrop fixed inset-0 bg-inverse-surface/40 z-40" id="sidebarBackdrop"></div>
 
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-logo">
-            <div class="sidebar-logo-mark">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="white"/>
-                </svg>
-            </div>
-            <div class="sidebar-logo-text">
-                Portal Magang
-                <small>Monitoring Absensi</small>
-            </div>
-        </div>
+    {{-- Grup Tiket terbuka otomatis saat berada di halaman daftar tiket / buat tiket --}}
+    @php
+        $ticketGroupOpen = request()->routeIs('tickets', 'ticket.*');
+    @endphp
 
-        <div class="nav-group-label">Menu Peserta</div>
-        <ul class="nav-list">
-            <li class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                <a href="{{ route('dashboard') }}">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
-                    Dashboard
-                </a>
-            </li>
-            <li class="nav-item {{ request()->routeIs('absensi') ? 'active' : '' }}">
-                <a href="{{ route('absensi') }}">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                    Absensi
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                    Ticket
-                    <span class="badge-count">2</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 4h11l3 3v13H5V4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 10h6M9 14h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                    Daily Activity
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 8a6 6 0 1 0-12 0c0 4-2 5-2 7h16c0-2-2-3-2-7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.6"/></svg>
-                    Notifikasi
-                    <span class="badge-count">3</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c0-3.5 3.2-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                    Profil
-                </a>
-            </li>
-        </ul>
-
-        <div class="sidebar-footer">
-            <div class="sidebar-user">
-                <div class="sidebar-user-avatar">{{ $initials ?? 'RA' }}</div>
-                <div class="sidebar-user-text">
-                    <strong>{{ $userName ?? 'Nama Peserta' }}</strong>
-                    <span>Peserta Magang</span>
+    <aside
+        class="app-sidebar fixed left-0 top-0 h-screen w-sidebar-width bg-surface-container-low shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between overflow-y-auto"
+        id="appSidebar">
+        <div class="flex flex-col">
+            <div class="h-16 px-space-md flex items-center gap-space-sm bg-surface-container-low">
+                <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-fixed shrink-0">
+                    <span class="material-symbols-outlined text-xl"
+                        style="font-variation-settings: 'FILL' 1;">bolt</span>
                 </div>
-                <a href="#" class="sidebar-user-logout" title="Keluar">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 17l5-5-5-5M20 12H8M13 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="flex flex-col">
+                    <span class="font-headline-sm text-headline-sm text-primary leading-tight font-bold">SIM-PKL</span>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase">PLN Icon
+                        Plus</span>
+                </div>
+            </div>
+            <div class="px-space-md pt-space-md pb-space-xs">
+                <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Daftar Menu</span>
+            </div>
+            <nav class="flex flex-col gap-space-2xs px-space-xs">
+                {{-- Dashboard --}}
+                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg font-label-lg text-label-lg transition-colors {{ request()->routeIs('dashboard') ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
+                    href="{{ route('dashboard') }}" @if (request()->routeIs('dashboard')) aria-current="page" @endif>
+                    <div class="flex items-center gap-space-sm">
+                        <span class="material-symbols-outlined text-[20px]">grid_view</span>
+                        <span>Dashboard</span>
+                    </div>
                 </a>
+
+                {{-- Absensi --}}
+                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg font-label-lg text-label-lg transition-colors {{ request()->routeIs('absensi') ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
+                    href="{{ route('absensi') }}" @if (request()->routeIs('absensi')) aria-current="page" @endif>
+                    <div class="flex items-center gap-space-sm">
+                        <span class="material-symbols-outlined text-[20px]">schedule</span>
+                        <span>Absensi</span>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-primary"></span>
+                </a>
+
+                {{-- Tiket Penugasan (dropdown) --}}
+                <div class="flex flex-col gap-space-2xs">
+                    <button type="button" data-toggle="submenu" aria-controls="submenuTicket"
+                        aria-expanded="{{ $ticketGroupOpen ? 'true' : 'false' }}"
+                        class="w-full flex items-center justify-between px-space-sm py-space-xs rounded-lg font-label-lg text-label-lg transition-colors {{ $ticketGroupOpen ? 'text-on-surface font-semibold' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+                        <div class="flex items-center gap-space-sm">
+                            <span class="material-symbols-outlined text-[20px]">confirmation_number</span>
+                            <span>Tiket Penugasan</span>
+                        </div>
+                        <span data-chevron
+                            class="material-symbols-outlined text-[18px] transition-transform duration-200 {{ $ticketGroupOpen ? 'rotate-180' : '' }}">expand_more</span>
+                    </button>
+
+                    <div id="submenuTicket"
+                        class="pl-space-md flex flex-col gap-space-2xs {{ $ticketGroupOpen ? '' : 'hidden' }}">
+                        <a href="{{ route('tickets') }}"
+                            class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('tickets') ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
+                            @if (request()->routeIs('tickets')) aria-current="page" @endif>
+                            Daftar &amp; Detail Tiket
+                        </a>
+                        <a href="{{ route('ticket.create') }}"
+                            class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('ticket.create') ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
+                            @if (request()->routeIs('ticket.create')) aria-current="page" @endif>
+                            Buat Tiket Baru
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Daily Activity --}}
+                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                    href="#">
+                    <div class="flex items-center gap-space-sm">
+                        <span class="material-symbols-outlined text-[20px]">assignment</span>
+                        <span>Daily Activity</span>
+                    </div>
+                </a>
+
+                {{-- Notifikasi --}}
+                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                    href="#">
+                    <div class="flex items-center gap-space-sm">
+                        <span class="material-symbols-outlined text-[20px]">notifications</span>
+                        <span>Notifikasi</span>
+                    </div>
+                    <span
+                        class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">3</span>
+                </a>
+
+                {{-- Profil --}}
+                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                    href="#">
+                    <div class="flex items-center gap-space-sm">
+                        <span class="material-symbols-outlined text-[20px]">person</span>
+                        <span>Profil</span>
+                    </div>
+                </a>
+            </nav>
+        </div>
+        <div
+            class="p-space-md m-space-sm rounded-xl bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] flex flex-col gap-space-xs">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-space-xs overflow-hidden">
+                    <div
+                        class="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm shrink-0 ring-2 ring-primary-fixed">
+                        {{ $initials ?? 'RA' }}</div>
+                    <div class="flex flex-col truncate">
+                        <span
+                            class="font-label-md text-label-md text-on-surface font-semibold truncate">{{ $userName ?? 'Nama Peserta' }}</span>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">Peserta PKL</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-space-2xs shrink-0">
+                    <button
+                        class="p-space-2xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors"
+                        title="Pengaturan Akun" type="button">
+                        <span class="material-symbols-outlined text-[18px]">settings</span>
+                    </button>
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button
+                            class="p-space-2xs text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-colors"
+                            title="Keluar" type="submit">
+                            <span class="material-symbols-outlined text-[18px]">logout</span>
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </aside>
 
-    <div class="main-area">
-        <div class="topbar">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Buka menu">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <div class="app-main-area pl-sidebar-width min-h-screen flex flex-col">
+        <header
+            class="app-header fixed top-0 left-sidebar-width right-0 h-16 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-30 flex items-center justify-between px-space-xl">
+            <div class="flex items-center gap-space-sm">
+                <button class="mobile-menu-btn hidden p-1 text-on-surface-variant" id="mobileMenuBtn" type="button"
+                    aria-label="Buka menu">
+                    <span class="material-symbols-outlined text-2xl">menu</span>
                 </button>
-                <div class="breadcrumb">@yield('breadcrumb')</div>
+                <span class="font-label-md text-label-md text-on-surface-variant">@yield('breadcrumb')</span>
             </div>
-            <div class="topbar-right">
-                <div class="topbar-date">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                    {{ $today ?? now()->translatedFormat('l, d F Y') }}
+            <div class="flex items-center gap-space-md">
+                <div
+                    class="hidden md:flex items-center gap-space-2xs text-on-surface-variant font-label-md text-label-md">
+                    <span class="material-symbols-outlined text-[16px]">calendar_today</span>
+                    <span>{{ $today ?? now()->translatedFormat('l, d F Y') }}</span>
                 </div>
-                <div class="topbar-avatar">{{ $initials ?? 'RA' }}</div>
+                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                    <span class="font-label-md text-label-md text-on-primary font-bold">{{ $initials ?? 'RA' }}</span>
+                </div>
             </div>
-        </div>
+        </header>
 
-        <div class="content">
+        <main class="w-full pt-16 bg-surface flex-1 px-space-xl py-space-xl">
             @yield('content')
-        </div>
+        </main>
     </div>
-</div>
 
-<script>
-    // Toggle sidebar di mobile
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('sidebarBackdrop');
-    const menuBtn = document.getElementById('mobileMenuBtn');
+    <script>
+        (function() {
+            const sidebar = document.getElementById('appSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const menuBtn = document.getElementById('mobileMenuBtn');
 
-    function toggleSidebar() {
-        sidebar.classList.toggle('is-open');
-        backdrop.classList.toggle('is-open');
-    }
-    menuBtn?.addEventListener('click', toggleSidebar);
-    backdrop?.addEventListener('click', toggleSidebar);
-</script>
+            function toggleSidebar() {
+                sidebar.classList.toggle('is-open');
+                backdrop.classList.toggle('is-open');
+            }
 
-@yield('extra-scripts')
+            menuBtn?.addEventListener('click', toggleSidebar);
+            backdrop?.addEventListener('click', toggleSidebar);
+
+            // Dropdown submenu sidebar (Tiket Penugasan)
+            document.querySelectorAll('[data-toggle="submenu"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const menu = document.getElementById(btn.getAttribute('aria-controls'));
+                    const isOpen = !menu.classList.toggle('hidden');
+                    btn.setAttribute('aria-expanded', isOpen);
+                    btn.querySelector('[data-chevron]').classList.toggle('rotate-180', isOpen);
+                });
+            });
+        })();
+    </script>
+    @yield('extra-scripts')
 </body>
+
 </html>
