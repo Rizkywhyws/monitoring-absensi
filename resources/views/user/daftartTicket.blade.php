@@ -21,7 +21,6 @@
         $cardClass =
             'relative overflow-hidden rounded-xl bg-surface-container-lowest p-5 shadow-sm flex flex-col justify-between gap-4 group hover:shadow-md transition-shadow';
 
-        // Data setiap tiket disiapkan di sini supaya modal detail & edit tidak perlu request baru saat dibuka.
         $ticketsData = $tickets->mapWithKeys(function ($ticket) use ($initialsOf, $formatSize) {
             return [
                 $ticket->id => [
@@ -62,7 +61,6 @@
             <span class="font-semibold text-primary">Daftar Tiket Penugasan</span>
         </nav>
 
-        {{-- Header halaman --}}
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
             <div class="space-y-1">
                 <div class="flex items-center gap-space-xs">
@@ -180,7 +178,6 @@
             </div>
         </form>
 
-        {{-- Tabel tiket --}}
         <div class="rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -306,7 +303,6 @@
         </div>
     </div>
 
-    {{-- ===================== MODAL DETAIL TIKET ===================== --}}
     <div id="ticket-modal-backdrop"
         class="fixed inset-0 z-50 bg-inverse-surface/50 hidden items-center justify-center p-4"
         onclick="if (event.target === this) closeTicketModal()">
@@ -353,7 +349,6 @@
         </div>
     </div>
 
-    {{-- ===================== MODAL EDIT TIKET ===================== --}}
     <div id="edit-modal-backdrop"
         class="fixed inset-0 z-50 bg-inverse-surface/50 hidden items-center justify-center p-4"
         onclick="if (event.target === this) closeEditModal()">
@@ -376,7 +371,6 @@
                 </div>
 
                 <div class="p-space-lg space-y-space-lg">
-                    {{-- Judul --}}
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
                             <label class="font-label-md text-label-md text-on-surface font-medium"
@@ -388,7 +382,6 @@
                             class="w-full h-11 px-space-sm rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm" />
                     </div>
 
-                    {{-- Deskripsi --}}
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
                             <label class="font-label-md text-label-md text-on-surface font-medium"
@@ -398,8 +391,6 @@
                         <textarea id="edit-desc" name="description" rows="4" required
                             class="w-full p-space-sm rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm resize-none"></textarea>
                     </div>
-
-                    {{-- Lampiran yang sudah ada --}}
                     <div class="space-y-1.5">
                         <span class="font-label-md text-label-md text-on-surface block font-medium">Lampiran Saat
                             Ini</span>
@@ -408,7 +399,6 @@
                         <div id="edit-existing-attachments" class="space-y-2"></div>
                     </div>
 
-                    {{-- Tambah lampiran baru --}}
                     <div class="space-y-1.5">
                         <label class="font-label-md text-label-md text-on-surface block font-medium">Tambah Lampiran
                             Baru</label>
@@ -447,11 +437,8 @@
 
 @section('extra-scripts')
     <script>
-        // Data semua tiket di halaman ini, dipakai modal detail & edit supaya tidak perlu request baru.
         const ticketsData = @json($ticketsData);
         const ticketUpdateBaseUrl = @json(url('/tickets'));
-
-        // ---------- Modal Detail ----------
         const modalBackdrop = document.getElementById('ticket-modal-backdrop');
         const modalNumber = document.getElementById('modal-number');
         const modalTitle = document.getElementById('modal-title');

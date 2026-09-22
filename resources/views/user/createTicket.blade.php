@@ -5,7 +5,6 @@
 
 @section('content')
     @php
-        // $nextNumber dikirim dari TicketController@create (hanya perkiraan nomor tiket berikutnya)
         $sectionClass = 'bg-surface-container-lowest p-space-lg rounded-xl shadow-sm space-y-space-md';
         $inputClass = 'w-full h-11 px-space-sm rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm';
         $numberClass = 'w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-label-sm text-label-sm font-bold';
@@ -13,8 +12,6 @@
     @endphp
 
     <div class="flex flex-col w-full gap-space-lg">
-
-        {{-- Breadcrumb --}}
         <nav aria-label="Breadcrumb"
             class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant">
             <a class="hover:text-primary transition-colors" href="{{ route('dashboard') }}">Presensi &amp; Penugasan</a>
@@ -24,7 +21,6 @@
             <span class="font-semibold text-primary">Buat Tiket Baru</span>
         </nav>
 
-        {{-- Header halaman --}}
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
             <div class="space-y-1">
                 <div class="flex items-center gap-space-xs flex-wrap">
@@ -66,10 +62,7 @@
             class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
             @csrf
 
-            {{-- ===================== KOLOM KIRI: FORM ===================== --}}
             <div class="lg:col-span-8 space-y-space-lg">
-
-                {{-- 1. Kategori & Informasi Pekerjaan --}}
                 <section class="{{ $sectionClass }}">
                     <div class="flex items-center justify-between gap-space-sm">
                         <div class="flex items-center gap-2.5">
@@ -86,7 +79,6 @@
                             Diisi</span>
                     </div>
 
-                    {{-- Judul --}}
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
                             <label class="font-label-md text-label-md text-on-surface font-medium"
@@ -105,7 +97,6 @@
                         @enderror
                     </div>
 
-                    {{-- Deskripsi --}}
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
                             <label class="font-label-md text-label-md text-on-surface font-medium"
@@ -128,7 +119,6 @@
                     </div>
                 </section>
 
-                {{-- 2. Lampiran SOP / SPK --}}
                 <section class="{{ $sectionClass }}">
                     <div class="flex items-center justify-between gap-space-sm">
                         <div class="flex items-center gap-2.5">
@@ -158,8 +148,6 @@
                         <span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">atau <strong
                                 class="text-primary">pilih file dari perangkat</strong></span>
                     </label>
-
-                    {{-- Error lampiran --}}
                     @error('attachments')
                         <p class="{{ $errorClass }}">
                             <span class="material-symbols-outlined text-[16px]">error</span>{{ $message }}
@@ -173,7 +161,6 @@
                         @endforeach
                     @endforeach
 
-                    {{-- Daftar file yang dipilih (diisi lewat JS) --}}
                     <div id="attachment-list" class="space-y-2"></div>
 
                     <template id="attachment-template">
@@ -199,7 +186,6 @@
                 </section>
             </div>
 
-            {{-- ===================== KOLOM KANAN: AKSI ===================== --}}
             <div class="lg:col-span-4 space-y-space-lg">
                 <div class="{{ $sectionClass }}">
                     <button id="btn-submit-ticket" type="submit"
@@ -229,7 +215,6 @@
 @section('extra-scripts')
     <script>
         (function() {
-            // ---- Counter karakter judul ----
             const titleInput = document.getElementById('ticket-title');
             const charCount = document.getElementById('title-char-count');
             if (titleInput && charCount) {
@@ -240,7 +225,6 @@
                 updateCount();
             }
 
-            // ---- Lampiran: pilih / drag & drop / hapus file sebelum dikirim ----
             const form = document.getElementById('ticket-form');
             const fileInput = document.getElementById('attachments');
             const dropZone = document.getElementById('drop-zone');
@@ -253,7 +237,6 @@
                 return Math.max(1, Math.round(bytes / 1024)) + ' KB';
             }
 
-            // Samakan isi <input type="file"> dengan daftar selectedFiles
             function syncInput() {
                 const transfer = new DataTransfer();
                 selectedFiles.forEach(function(file) {
