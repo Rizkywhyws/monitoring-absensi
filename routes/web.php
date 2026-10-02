@@ -2,122 +2,63 @@
 
 use App\Http\Controllers\Admin\DaftarUserController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Admin\TambahUserController;
 use App\Http\Controllers\User\TicketController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
-Route::get('/login', [LoginController::class, 'create'])->name('login');
-Route::post('/login', [LoginController::class, 'store']);
+Route::get('/', fn() => view('welcome'));
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store'])
+        ->middleware('throttle:5,1');
+});
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
+
+    Route::get('/dashboard', fn() => view('admin.dashboardAdmin'))->name('dashboard');
+
+    Route::controller(DaftarUserController::class)->prefix('daftar-user')->name('daftar-user')->group(function () {
+        Route::get('/', 'index');
+        Route::get('/tambah', 'tambah')->name('.tambah');
+        Route::post('/simpan', 'simpan')->name('.simpan');
+        Route::get('/{id}', 'detail')->name('.detail');
+        Route::get('/{id}/edit', 'edit')->name('.edit');
+        Route::put('/{id}', 'update')->name('.update');
+        Route::put('/{id}/kelompok', 'ubahKelompok')->name('.kelompok');
+        Route::put('/{id}/reset-password', 'resetPassword')->name('.reset-password');
+        Route::put('/{id}/aktifkan', 'aktifkan')->name('.aktifkan');
+        Route::put('/{id}/nonaktifkan', 'nonaktifkan')->name('.nonaktifkan');
+        Route::delete('/{id}', 'hapus')->name('.hapus');
+    });
 });
 
-Route::get('/dashboard', function () {
-    return view('user.dashboard', [
-        'userName'      => 'Refangga Ardiansah',
-        'initials'      => 'RA',
-        'nim'           => '240810101052',
-        'periodeMagang' => '01 Agu 2026 – 30 Sep 2026',
-        'divisi'        => 'Instalasi & Jaringan',
-        'pembimbing'    => 'Bpk. Hendra Kusuma',
-        'kampus'        => 'Politeknik Negeri Jember',
-    ]);
-})->name('dashboard');
-
-
-Route::get('/absensi', function () {
-    return view('user.absensi', [
-        'userName' => 'Refangga Ardiansah',
-        'nim'      => '240810101052',
-    ]);
-})->name('absensi');
-
-
-Route::get('/dashboard/admin', [TambahUserController::class, 'create'])
-    ->name('tambahuser');
-
-Route::post('/dashboard/admin', [TambahUserController::class, 'store'])
-    ->name('tambahuser.store');
-
-
-Route::get('/user', function () {
-    return view('user.index');
-})->name('user.index');
-
-Route::prefix('admin')
-    ->name('admin.')
-    ->middleware(['auth'])
-    ->group(function () {
-        Route::get('/daftar-user', [
-            DaftarUserController::class,
-            'index'
-        ])->name('daftar-user');
-
-        Route::get('/daftar-user/tambah', [
-            DaftarUserController::class,
-            'tambah'
-        ])->name('daftar-user.tambah');
-
-        Route::post('/daftar-user/simpan', [
-            DaftarUserController::class,
-            'simpan'
-        ])->name('daftar-user.simpan');
-
-        Route::get('/daftar-user/{id}/edit', [
-            DaftarUserController::class,
-            'edit'
-        ])->name('daftar-user.edit');
-
-        Route::put('/daftar-user/{id}', [
-            DaftarUserController::class,
-            'update'
-        ])->name('daftar-user.update');
-
-        Route::put('/daftar-user/{id}/kelompok', [
-            DaftarUserController::class,
-            'ubahKelompok'
-        ])->name('daftar-user.kelompok');
-
-        Route::put('/daftar-user/{id}/reset-password', [
-            DaftarUserController::class,
-            'resetPassword'
-        ])->name('daftar-user.reset-password');
-
-        Route::put('/daftar-user/{id}/aktifkan', [
-            DaftarUserController::class,
-            'aktifkan'
-        ])->name('daftar-user.aktifkan');
-
-        Route::put('/daftar-user/{id}/nonaktifkan', [
-            DaftarUserController::class,
-            'nonaktifkan'
-        ])->name('daftar-user.nonaktifkan');
-
-
-        Route::delete('/daftar-user/{id}', [
-            DaftarUserController::class,
-            'hapus'
-        ])->name('daftar-user.hapus');
-
-
-        Route::get('/daftar-user/{id}', [
-            DaftarUserController::class,
-            'detail'
-        ])->name('daftar-user.detail');
-
-    });
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', function (Request $request) {
+        $user = $request->user()->load('group');
+
+        $mulai   = $user->periode_mulai?->translatedFormat('d M Y');
+        $selesai = $user->periode_selesai?->translatedFormat('d M Y');
+
+        return view('user.dashboard', [
+            'userName'      => $user->name,
+            'nim'           => $user->nim,
+            'periodeMagang' => ($mulai && $selesai) ? "$mulai – $selesai" : '-',
+            'divisi'        => $user->group?->name ?? '-',
+            'pembimbing'    => $user->mentor ?? '-',
+            'kampus'        => $user->asal_universitas ?? '-',
+        ]);
+    })->name('dashboard');
+
+    Route::get('/absensi', fn(Request $request) => view('user.absensi', [
+        'userName' => $request->user()->name,
+        'nim'      => $request->user()->nim,
+    ]))->name('absensi');
+
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets');
     Route::get('/tickets/create', [TicketController::class, 'create'])->name('ticket.create');
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('ticket.show')->whereNumber('ticket');
     Route::post('/tickets', [TicketController::class, 'store'])->name('ticket.store');
     Route::put('/tickets/{ticket}', [TicketController::class, 'update'])->name('ticket.update');
-});
-
-Route::get('/', function () {
-    return view('welcome');
 });

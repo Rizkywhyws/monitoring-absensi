@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>@yield('title', 'Portal Magang')</title>
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
@@ -244,9 +245,37 @@
     class="bg-background font-body-md text-body-md text-on-surface antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
     <div class="sidebar-backdrop fixed inset-0 bg-inverse-surface/40 z-40" id="sidebarBackdrop"></div>
 
-    {{-- Grup Tiket terbuka otomatis saat berada di halaman daftar tiket / buat tiket --}}
     @php
+        $authUser = auth()->user();
+        $isAdmin = $authUser?->role === 'admin';
+        $userName = $authUser?->name ?? 'Pengguna';
+        $userInitials = \Illuminate\Support\Str::of($userName)
+            ->explode(' ')
+            ->filter()
+            ->take(2)
+            ->map(fn($w) => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($w, 0, 1)))
+            ->implode('');
+
         $ticketGroupOpen = request()->routeIs('tickets', 'ticket.*');
+
+        $adminMenu = [
+            ['admin.dashboard', 'Dashboard', 'grid_view'],
+            ['admin.daftar-user', 'User', 'group'],
+            ['admin.absensi', 'Absensi', 'co_present'],
+            ['admin.tickets', 'Ticket', 'confirmation_number'],
+            ['admin.daily-activity', 'Daily Activity', 'event_note'],
+            ['admin.laporan', 'Laporan', 'assessment'],
+            ['admin.notifikasi', 'Notifikasi', 'notifications', 3],
+            ['admin.profil', 'Profil', 'manage_accounts'],
+        ];
+
+        $navBase =
+            'flex items-center justify-between px-space-sm py-space-sm rounded-lg font-label-lg text-label-lg transition-colors';
+        $navActive = 'bg-primary-container text-on-primary-container font-semibold shadow-sm';
+        $navIdle = 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
+
+        $profileRoute = $isAdmin ? 'admin.profil' : 'profil';
+        $profileUrl = \Illuminate\Support\Facades\Route::has($profileRoute) ? route($profileRoute) : null;
     @endphp
 
     <aside
@@ -265,115 +294,99 @@
                 </div>
             </div>
             <div class="px-space-md pt-space-md pb-space-xs">
-                <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Daftar Menu</span>
+                <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
+                    {{ $isAdmin ? 'Navigasi Utama' : 'Daftar Menu' }}
+                </span>
             </div>
-            <nav class="flex flex-col gap-space-2xs px-space-xs">
-                {{-- Dashboard --}}
-                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg font-label-lg text-label-lg transition-colors {{ request()->routeIs('dashboard') ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
-                    href="{{ route('dashboard') }}" @if (request()->routeIs('dashboard')) aria-current="page" @endif>
-                    <div class="flex items-center gap-space-sm">
-                        <span class="material-symbols-outlined text-[20px]">grid_view</span>
-                        <span>Dashboard</span>
-                    </div>
-                </a>
 
-                {{-- Absensi --}}
-                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg font-label-lg text-label-lg transition-colors {{ request()->routeIs('absensi') ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
-                    href="{{ route('absensi') }}" @if (request()->routeIs('absensi')) aria-current="page" @endif>
-                    <div class="flex items-center gap-space-sm">
-                        <span class="material-symbols-outlined text-[20px]">schedule</span>
-                        <span>Absensi</span>
-                    </div>
-                    <span class="w-2 h-2 rounded-full bg-primary"></span>
-                </a>
-
-                {{-- Tiket Penugasan (dropdown) --}}
-                <div class="flex flex-col gap-space-2xs">
-                    <button type="button" data-toggle="submenu" aria-controls="submenuTicket"
-                        aria-expanded="{{ $ticketGroupOpen ? 'true' : 'false' }}"
-                        class="w-full flex items-center justify-between px-space-sm py-space-xs rounded-lg font-label-lg text-label-lg transition-colors {{ $ticketGroupOpen ? 'text-on-surface font-semibold' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}">
+            <nav class="flex flex-col gap-space-xs px-space-xs">
+                @if ($isAdmin)
+                    @foreach ($adminMenu as $m)
+                        @php
+                            $active = request()->routeIs($m[0] . '*');
+                            $href = \Illuminate\Support\Facades\Route::has($m[0]) ? route($m[0]) : '#';
+                        @endphp
+                        <a href="{{ $href }}" class="{{ $navBase }} {{ $active ? $navActive : $navIdle }}"
+                            @if ($active) aria-current="page" @endif>
+                            <div class="flex items-center gap-space-sm">
+                                <span class="material-symbols-outlined text-[20px]">{{ $m[2] }}</span>
+                                <span>{{ $m[1] }}</span>
+                            </div>
+                            @isset($m[3])
+                                <span
+                                    class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">{{ $m[3] }}</span>
+                            @endisset
+                        </a>
+                    @endforeach
+                @else
+                    <a class="{{ $navBase }} {{ request()->routeIs('dashboard') ? $navActive : $navIdle }}"
+                        href="{{ route('dashboard') }}" @if (request()->routeIs('dashboard')) aria-current="page" @endif>
                         <div class="flex items-center gap-space-sm">
-                            <span class="material-symbols-outlined text-[20px]">confirmation_number</span>
-                            <span>Tiket Penugasan</span>
+                            <span class="material-symbols-outlined text-[20px]">grid_view</span>
+                            <span>Dashboard</span>
                         </div>
-                        <span data-chevron
-                            class="material-symbols-outlined text-[18px] transition-transform duration-200 {{ $ticketGroupOpen ? 'rotate-180' : '' }}">expand_more</span>
-                    </button>
+                    </a>
 
-                    <div id="submenuTicket"
-                        class="pl-space-md flex flex-col gap-space-2xs {{ $ticketGroupOpen ? '' : 'hidden' }}">
-                        <a href="{{ route('tickets') }}"
-                            class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('tickets') ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
-                            @if (request()->routeIs('tickets')) aria-current="page" @endif>
-                            Daftar &amp; Detail Tiket
-                        </a>
-                        <a href="{{ route('ticket.create') }}"
-                            class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('ticket.create') ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' }}"
-                            @if (request()->routeIs('ticket.create')) aria-current="page" @endif>
-                            Buat Tiket Baru
-                        </a>
-                    </div>
-                </div>
+                    <a class="{{ $navBase }} {{ request()->routeIs('absensi') ? $navActive : $navIdle }}"
+                        href="{{ route('absensi') }}" @if (request()->routeIs('absensi')) aria-current="page" @endif>
+                        <div class="flex items-center gap-space-sm">
+                            <span class="material-symbols-outlined text-[20px]">schedule</span>
+                            <span>Absensi</span>
+                        </div>
+                        <span class="w-2 h-2 rounded-full bg-primary"></span>
+                    </a>
 
-                {{-- Daily Activity --}}
-                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                    href="#">
-                    <div class="flex items-center gap-space-sm">
-                        <span class="material-symbols-outlined text-[20px]">assignment</span>
-                        <span>Daily Activity</span>
-                    </div>
-                </a>
-
-                {{-- Notifikasi --}}
-                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                    href="#">
-                    <div class="flex items-center gap-space-sm">
-                        <span class="material-symbols-outlined text-[20px]">notifications</span>
-                        <span>Notifikasi</span>
-                    </div>
-                    <span
-                        class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">3</span>
-                </a>
-
-                {{-- Profil --}}
-                <a class="flex items-center justify-between px-space-sm py-space-xs rounded-lg text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                    href="#">
-                    <div class="flex items-center gap-space-sm">
-                        <span class="material-symbols-outlined text-[20px]">person</span>
-                        <span>Profil</span>
-                    </div>
-                </a>
-            </nav>
-        </div>
-        <div
-            class="p-space-md m-space-sm rounded-xl bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] flex flex-col gap-space-xs">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-space-xs overflow-hidden">
-                    <div
-                        class="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm shrink-0 ring-2 ring-primary-fixed">
-                        {{ $initials ?? 'RA' }}</div>
-                    <div class="flex flex-col truncate">
-                        <span
-                            class="font-label-md text-label-md text-on-surface font-semibold truncate">{{ $userName ?? 'Nama Peserta' }}</span>
-                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">Peserta PKL</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-space-2xs shrink-0">
-                    <button
-                        class="p-space-2xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors"
-                        title="Pengaturan Akun" type="button">
-                        <span class="material-symbols-outlined text-[18px]">settings</span>
-                    </button>
-                    <form action="{{ route('logout') }}" method="POST">
-                        @csrf
-                        <button
-                            class="p-space-2xs text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-colors"
-                            title="Keluar" type="submit">
-                            <span class="material-symbols-outlined text-[18px]">logout</span>
+                    <div class="flex flex-col gap-space-2xs">
+                        <button type="button" data-toggle="submenu" aria-controls="submenuTicket"
+                            aria-expanded="{{ $ticketGroupOpen ? 'true' : 'false' }}"
+                            class="w-full {{ $navBase }} {{ $ticketGroupOpen ? 'text-on-surface font-semibold' : $navIdle }}">
+                            <div class="flex items-center gap-space-sm">
+                                <span class="material-symbols-outlined text-[20px]">confirmation_number</span>
+                                <span>Tiket Penugasan</span>
+                            </div>
+                            <span data-chevron
+                                class="material-symbols-outlined text-[18px] transition-transform duration-200 {{ $ticketGroupOpen ? 'rotate-180' : '' }}">expand_more</span>
                         </button>
-                    </form>
-                </div>
-            </div>
+
+                        <div id="submenuTicket"
+                            class="pl-space-md flex flex-col gap-space-2xs {{ $ticketGroupOpen ? '' : 'hidden' }}">
+                            <a href="{{ route('tickets') }}"
+                                class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('tickets') ? $navActive : $navIdle }}"
+                                @if (request()->routeIs('tickets')) aria-current="page" @endif>
+                                Daftar &amp; Detail Tiket
+                            </a>
+                            <a href="{{ route('ticket.create') }}"
+                                class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('ticket.create') ? $navActive : $navIdle }}"
+                                @if (request()->routeIs('ticket.create')) aria-current="page" @endif>
+                                Buat Tiket Baru
+                            </a>
+                        </div>
+                    </div>
+
+                    <a class="{{ $navBase }} {{ $navIdle }}" href="#">
+                        <div class="flex items-center gap-space-sm">
+                            <span class="material-symbols-outlined text-[20px]">assignment</span>
+                            <span>Daily Activity</span>
+                        </div>
+                    </a>
+
+                    <a class="{{ $navBase }} {{ $navIdle }}" href="#">
+                        <div class="flex items-center gap-space-sm">
+                            <span class="material-symbols-outlined text-[20px]">notifications</span>
+                            <span>Notifikasi</span>
+                        </div>
+                        <span
+                            class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">3</span>
+                    </a>
+
+                    <a class="{{ $navBase }} {{ $navIdle }}" href="{{ $profileUrl ?? '#' }}">
+                        <div class="flex items-center gap-space-sm">
+                            <span class="material-symbols-outlined text-[20px]">person</span>
+                            <span>Profil</span>
+                        </div>
+                    </a>
+                @endif
+            </nav>
         </div>
     </aside>
 
@@ -393,8 +406,55 @@
                     <span class="material-symbols-outlined text-[16px]">calendar_today</span>
                     <span>{{ $today ?? now()->translatedFormat('l, d F Y') }}</span>
                 </div>
-                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <span class="font-label-md text-label-md text-on-primary font-bold">{{ $initials ?? 'RA' }}</span>
+
+                {{-- Profil (dropdown) --}}
+                <div class="relative" id="profileMenu">
+                    <button type="button" id="profileBtn" aria-haspopup="true" aria-expanded="false"
+                        aria-controls="profileDropdown" aria-label="Menu profil"
+                        class="flex items-center gap-space-xs rounded-full pl-1 pr-space-xs py-1 hover:bg-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors">
+                        <span class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                            <span
+                                class="font-label-md text-label-md text-on-primary font-bold">{{ $userInitials }}</span>
+                        </span>
+                        <span
+                            class="hidden md:inline max-w-[140px] truncate font-label-md text-label-md text-on-surface font-semibold">{{ $userName }}</span>
+                        <span
+                            class="material-symbols-outlined text-[18px] text-on-surface-variant transition-transform duration-200"
+                            id="profileChevron">expand_more</span>
+                    </button>
+
+                    <div id="profileDropdown" role="menu"
+                        class="hidden absolute right-0 mt-2 w-64 rounded-xl bg-surface-container-lowest shadow-lg overflow-hidden">
+                        <div class="px-space-md py-space-sm bg-surface-container-low">
+                            <div class="font-label-lg text-label-lg font-semibold text-on-surface truncate">
+                                {{ $userName }}</div>
+                            <div class="font-body-sm text-body-sm text-on-surface-variant truncate">
+                                {{ $authUser?->email }}</div>
+                            <span
+                                class="inline-block mt-1 px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">
+                                {{ $isAdmin ? 'Administrator' : 'Peserta PKL' }}
+                            </span>
+                        </div>
+
+                        <div class="p-space-xs flex flex-col">
+                            @if ($profileUrl)
+                                <a href="{{ $profileUrl }}" role="menuitem"
+                                    class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">person</span>
+                                    <span>Profil Saya</span>
+                                </a>
+                            @endif
+
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" role="menuitem"
+                                    class="w-full flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg font-label-lg text-label-lg text-error hover:bg-error-container transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">logout</span>
+                                    <span>Keluar</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -418,7 +478,6 @@
             menuBtn?.addEventListener('click', toggleSidebar);
             backdrop?.addEventListener('click', toggleSidebar);
 
-            // Dropdown submenu sidebar (Tiket Penugasan)
             document.querySelectorAll('[data-toggle="submenu"]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const menu = document.getElementById(btn.getAttribute('aria-controls'));
@@ -426,6 +485,29 @@
                     btn.setAttribute('aria-expanded', isOpen);
                     btn.querySelector('[data-chevron]').classList.toggle('rotate-180', isOpen);
                 });
+            });
+            const profileMenu = document.getElementById('profileMenu');
+            const profileBtn = document.getElementById('profileBtn');
+            const profileDropdown = document.getElementById('profileDropdown');
+            const profileChevron = document.getElementById('profileChevron');
+
+            function setProfileMenu(open) {
+                profileDropdown.classList.toggle('hidden', !open);
+                profileBtn.setAttribute('aria-expanded', open);
+                profileChevron.classList.toggle('rotate-180', open);
+            }
+
+            profileBtn?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                setProfileMenu(profileDropdown.classList.contains('hidden'));
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!profileMenu.contains(e.target)) setProfileMenu(false);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') setProfileMenu(false);
             });
         })();
     </script>

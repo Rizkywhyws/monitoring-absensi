@@ -3,6 +3,51 @@
 @section('title', 'Daftar Tiket Penugasan')
 @section('breadcrumb', 'Tiket / Daftar Tiket Penugasan')
 
+@section('extra-styles')
+    <style>
+        .modal-backdrop.is-open {
+            animation: modal-fade-in .2s ease-out both;
+        }
+        .modal-backdrop.is-open .modal-panel {
+            animation: modal-panel-in .28s cubic-bezier(.16, 1, .3, 1) both;
+        }
+        .modal-backdrop.is-closing {
+            animation: modal-fade-out .16s ease-in both;
+        }
+
+        .modal-backdrop.is-closing .modal-panel {
+            animation: modal-panel-out .16s ease-in both;
+        }
+
+        @keyframes modal-fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modal-fade-out {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes modal-panel-in {
+            from { opacity: 0; transform: translateY(24px) scale(.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes modal-panel-out {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(12px) scale(.97); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .modal-backdrop,
+            .modal-backdrop .modal-panel {
+                animation: none !important;
+            }
+        }
+    </style>
+@endsection
+
 @section('content')
     @php
         $percentOf = fn($value) => $stats['total'] > 0 ? round(($value / $stats['total']) * 100) : 0;
@@ -71,7 +116,7 @@
                     <span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Kantor Perwakilan
                         Jember</span>
                 </div>
-                <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Tiket Penugasan 
+                <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Tiket Penugasan
                 </h1>
                 <p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
                     Daftar instruksi kerja teknis, pemasangan, dan pemeliharaan kabel fiber optik serta perangkat
@@ -304,9 +349,9 @@
     </div>
 
     <div id="ticket-modal-backdrop"
-        class="fixed inset-0 z-50 bg-inverse-surface/50 hidden items-center justify-center p-4"
+        class="modal-backdrop fixed inset-0 z-50 bg-inverse-surface/50 hidden items-center justify-center p-4"
         onclick="if (event.target === this) closeTicketModal()">
-        <div class="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl bg-surface-container-lowest shadow-xl">
+        <div class="modal-panel w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl bg-surface-container-lowest shadow-xl">
             <div
                 class="sticky top-0 bg-surface-container-lowest flex items-start justify-between gap-space-md p-space-lg border-b border-surface-container">
                 <div class="space-y-1 min-w-0">
@@ -349,10 +394,11 @@
         </div>
     </div>
 
+    {{-- Modal Edit --}}
     <div id="edit-modal-backdrop"
-        class="fixed inset-0 z-50 bg-inverse-surface/50 hidden items-center justify-center p-4"
+        class="modal-backdrop fixed inset-0 z-50 bg-inverse-surface/50 hidden items-center justify-center p-4"
         onclick="if (event.target === this) closeEditModal()">
-        <div class="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl bg-surface-container-lowest shadow-xl">
+        <div class="modal-panel w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl bg-surface-container-lowest shadow-xl">
             <form id="edit-form" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
@@ -439,6 +485,26 @@
     <script>
         const ticketsData = @json($ticketsData);
         const ticketUpdateBaseUrl = @json(url('/tickets'));
+        const MODAL_CLOSE_MS = 160; 
+
+        function showModal(el) {
+            clearTimeout(el._closeTimer);
+            el.classList.remove('hidden', 'is-closing');
+            el.classList.add('flex', 'is-open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideModal(el) {
+            if (el.classList.contains('hidden') || el.classList.contains('is-closing')) return;
+            el.classList.remove('is-open');
+            el.classList.add('is-closing');
+            el._closeTimer = setTimeout(function() {
+                el.classList.remove('flex', 'is-closing');
+                el.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, MODAL_CLOSE_MS);
+        }
+
         const modalBackdrop = document.getElementById('ticket-modal-backdrop');
         const modalNumber = document.getElementById('modal-number');
         const modalTitle = document.getElementById('modal-title');
@@ -487,15 +553,11 @@
                 });
             }
 
-            modalBackdrop.classList.remove('hidden');
-            modalBackdrop.classList.add('flex');
-            document.body.style.overflow = 'hidden';
+            showModal(modalBackdrop);
         }
 
         function closeTicketModal() {
-            modalBackdrop.classList.add('hidden');
-            modalBackdrop.classList.remove('flex');
-            document.body.style.overflow = '';
+            hideModal(modalBackdrop);
         }
 
         const editBackdrop = document.getElementById('edit-modal-backdrop');
@@ -539,15 +601,11 @@
                 });
             }
 
-            editBackdrop.classList.remove('hidden');
-            editBackdrop.classList.add('flex');
-            document.body.style.overflow = 'hidden';
+            showModal(editBackdrop);
         }
 
         function closeEditModal() {
-            editBackdrop.classList.add('hidden');
-            editBackdrop.classList.remove('flex');
-            document.body.style.overflow = '';
+            hideModal(editBackdrop);
         }
 
         function renderNewAttachments(files) {

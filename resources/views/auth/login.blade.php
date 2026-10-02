@@ -38,6 +38,57 @@
         ::-webkit-scrollbar {
             display: none;
         }
+
+        /* ===== Pop up login berhasil ===== */
+        #successModal.is-open { animation: ls-backdrop-in .25s ease-out both; }
+        #successModal.is-open #successCard { animation: ls-card-in .45s cubic-bezier(.34, 1.4, .64, 1) both; }
+        #successModal.is-leaving { animation: ls-backdrop-out .25s ease-in both; }
+        #successModal.is-leaving #successCard { animation: ls-card-out .25s ease-in both; }
+
+        @keyframes ls-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes ls-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes ls-card-in {
+            from { opacity: 0; transform: translateY(24px) scale(.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes ls-card-out {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(8px) scale(.97); }
+        }
+
+        /* Lingkaran & centang tergambar, halo berdenyut sekali */
+        .ls-ring, .ls-check { stroke-dasharray: 1; stroke-dashoffset: 1; }
+        #successModal.is-open .ls-ring { animation: ls-draw .55s ease-out .25s forwards; }
+        #successModal.is-open .ls-check { animation: ls-draw .35s ease-out .65s forwards; }
+        @keyframes ls-draw { to { stroke-dashoffset: 0; } }
+
+        .ls-halo { opacity: 0; }
+        #successModal.is-open .ls-halo { animation: ls-halo 1.1s ease-out .6s both; }
+        @keyframes ls-halo {
+            from { transform: scale(.8); opacity: .5; }
+            to { transform: scale(1.6); opacity: 0; }
+        }
+
+        /* Teks naik halus & progress bar */
+        .ls-up { opacity: 0; }
+        #successModal.is-open .ls-up { animation: ls-up .4s ease-out forwards; }
+        @keyframes ls-up {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #successBar { width: 0; }
+        #successModal.is-open #successBar { animation: ls-bar 1.15s cubic-bezier(.4, 0, .2, 1) .3s forwards; }
+        @keyframes ls-bar { to { width: 100%; } }
+
+        /* Hormati pengguna yang mematikan animasi di perangkatnya */
+        @media (prefers-reduced-motion: reduce) {
+            #successModal, #successModal * {
+                animation-duration: .01ms !important;
+                animation-delay: 0s !important;
+                animation-iteration-count: 1 !important;
+            }
+        }
     </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script id="tailwind-config">
@@ -157,7 +208,7 @@
 <body class="bg-background font-body-md text-body-md text-on-surface antialiased">
     <main class="w-full min-h-screen flex items-center justify-center p-space-md bg-background">
         <div class="flex flex-col w-full">
-            <div
+            <div id="loginCard"
                 class="w-full max-w-6xl mx-auto min-h-[640px] rounded-2xl shadow-xl overflow-hidden bg-surface-container-lowest flex flex-col lg:flex-row my-auto text-[0.92rem]">
 
                 <!-- LEFT PANEL — Brand / marketing side -->
@@ -381,25 +432,36 @@
         </div>
     </main>
 
-    <!-- POPUP LOGIN BERHASIL -->
+    <!-- POP UP LOGIN BERHASIL -->
     <div id="successModal"
-        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        class="hidden fixed inset-0 z-50 flex items-center justify-center p-space-md bg-inverse-surface/40 backdrop-blur-sm"
+        role="status" aria-live="polite">
         <div id="successCard"
-            class="bg-surface-container-lowest rounded-2xl shadow-2xl p-space-2xl flex flex-col items-center space-y-space-md scale-90 opacity-0 transition-all duration-300 mx-4">
-            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <span class="material-symbols-outlined text-primary text-4xl"
-                    style="font-variation-settings: 'FILL' 1;">
-                    check_circle
-                </span>
+            class="relative w-full max-w-sm overflow-hidden rounded-2xl bg-surface-container-lowest shadow-2xl text-center">
+            <div class="h-1.5 bg-gradient-to-r from-primary via-primary-container to-secondary-container"></div>
+            <div class="px-space-xl pt-space-xl pb-space-lg flex flex-col items-center">
+                <div class="relative w-20 h-20 mb-space-md flex items-center justify-center">
+                    <span class="ls-halo absolute inset-0 rounded-full bg-primary/20"></span>
+                    <div class="absolute inset-0 rounded-full bg-primary/10"></div>
+                    <svg class="relative w-12 h-12 text-primary" viewBox="0 0 52 52" fill="none"
+                        stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <circle class="ls-ring" cx="26" cy="26" r="24" pathLength="1"></circle>
+                        <path class="ls-check" d="M15 27 l8 8 l15 -17" pathLength="1"></path>
+                    </svg>
+                </div>
+                <p class="ls-up font-headline-md text-headline-md font-bold text-on-surface"
+                    style="animation-delay: .45s">Login Berhasil!</p>
+                <p id="successSub" class="ls-up font-body-md text-body-md text-on-surface-variant mt-1"
+                    style="animation-delay: .55s">Mengalihkan ke dashboard...</p>
             </div>
-            <p class="font-headline-sm text-headline-sm font-semibold text-on-surface">Login Berhasil!</p>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">Mengalihkan ke dashboard...</p>
+            <div class="h-1 bg-surface-container">
+                <div id="successBar" class="h-full bg-primary"></div>
+            </div>
         </div>
     </div>
 
     <script>
         (function () {
-            // Toggle lihat/sembunyikan password
             const passwordInput = document.getElementById('password');
             const toggleBtn = document.getElementById('toggle-password');
             const eyeIcon = document.getElementById('eye-icon');
@@ -412,7 +474,6 @@
                 });
             }
 
-            // Login via AJAX
             const form = document.getElementById('loginForm');
             const btn = document.getElementById('loginBtn');
             const btnText = document.getElementById('btnText');
@@ -420,7 +481,8 @@
             const btnIcon = document.getElementById('btnIcon');
             const errorBox = document.getElementById('loginError');
             const modal = document.getElementById('successModal');
-            const successCard = document.getElementById('successCard');
+            const successSub = document.getElementById('successSub');
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
             function setLoading(isLoading) {
                 btn.disabled = isLoading;
@@ -439,15 +501,52 @@
                 errorBox.textContent = '';
             }
 
-            function showSuccessModal(redirectUrl) {
+            function showSuccessModal(redirectUrl, name) {
+                if (name) successSub.textContent = 'Selamat datang, ' + name;
+
                 modal.classList.remove('hidden');
-                requestAnimationFrame(() => {
-                    successCard.classList.remove('scale-90', 'opacity-0');
-                    successCard.classList.add('scale-100', 'opacity-100');
-                });
+                void modal.offsetWidth; 
+                modal.classList.add('is-open');
+
                 setTimeout(() => {
-                    window.location.href = redirectUrl;
-                }, 1200);
+                    modal.classList.remove('is-open');
+                    modal.classList.add('is-leaving');
+                }, reduceMotion ? 150 : 1450);
+                setTimeout(() => { window.location.href = redirectUrl; }, reduceMotion ? 300 : 1700);
+            }
+
+            window.addEventListener('pageshow', function (e) {
+                if (e.persisted) window.location.reload();
+            });
+
+            async function refreshCsrfToken() {
+                const res = await fetch('{{ route('login') }}', {
+                    headers: { 'Accept': 'text/html' },
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                });
+                const html = await res.text();
+                const match = html.match(/<meta name="csrf-token" content="([^"]+)"/);
+                if (!match) throw new Error('Token CSRF tidak ditemukan');
+
+                document.querySelector('meta[name="csrf-token"]').content = match[1];
+                const hidden = form.querySelector('input[name="_token"]');
+                if (hidden) hidden.value = match[1];
+            }
+
+            function sendLogin() {
+                const formData = new FormData(form);
+                formData.append('remember', document.getElementById('remember').checked ? '1' : '0');
+
+                return fetch('{{ route('login') }}', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: formData,
+                });
             }
 
             form.addEventListener('submit', async function (e) {
@@ -455,23 +554,21 @@
                 hideError();
                 setLoading(true);
 
-                const formData = new FormData(form);
-                formData.append('remember', document.getElementById('remember').checked ? '1' : '0');
-
                 try {
-                    const response = await fetch('{{ route('login') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        },
-                        body: formData,
-                    });
+                    let response = await sendLogin();
 
-                    const data = await response.json();
+                    if (response.status === 419) {
+                        await refreshCsrfToken();
+                        response = await sendLogin();
+                    }
 
-                    if (response.ok && data.success) {
-                        showSuccessModal(data.redirect);
+                    const data = await response.json().catch(() => ({}));
+
+                    if (response.status === 419) {
+                        setLoading(false);
+                        showError('Sesi tidak valid. Muat ulang halaman (Ctrl+F5) lalu coba lagi.');
+                    } else if (response.ok && data.success) {
+                        showSuccessModal(data.redirect, data.name || (data.user && data.user.name));
                     } else {
                         setLoading(false);
                         showError(data.message || 'Email atau kata sandi tidak sesuai.');
