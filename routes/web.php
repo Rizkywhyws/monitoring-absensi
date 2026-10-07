@@ -1,6 +1,8 @@
 <?php
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AttendanceController;
+
 
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
@@ -18,12 +20,10 @@ Route::get('/dashboard', function () {
     ]);
 })->name('dashboard');
 
-Route::get('/absensi', function () {
-    return view('user.absensi', [
-        'userName' => 'Refangga Ardiansah',
-        'nim'      => '240810101052',
-    ]);
-})->name('absensi');
+Route::get('/absensi', [AttendanceController::class, 'index'])
+    ->name('absensi');
+Route::post('/absensi/check-in', [AttendanceController::class, 'checkIn'])
+    ->name('absensi.check-in');
 
 Route::get('/', function () {
     return view('welcome');

@@ -426,6 +426,44 @@
 
 @section('content')
 
+@if ($todayAttendance)
+    <div class="absensi-header">
+        <h1>Absensi Hari Ini</h1>
+        <p>Anda sudah melakukan check-in hari ini.</p>
+    </div>
+
+    <div class="step-panel active" style="text-align:center; padding: 30px 20px;">
+        <div class="icon-circle valid" style="width:64px; height:64px; margin: 0 auto 16px;">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <h2 style="font-size: 18px; margin: 0 0 6px;">
+            Status: {{ $todayAttendance->status === 'hadir' ? 'HADIR' : 'TERLAMBAT' }}
+        </h2>
+        <p style="font-size: 13px; color: var(--ink-500); margin: 0 0 20px;">
+            Check-in pukul {{ $todayAttendance->check_in->format('H:i:s') }} WIB
+        </p>
+
+        @if ($todayAttendance->check_in_photo)
+            <img src="{{ Storage::disk('public')->url($todayAttendance->check_in_photo) }}"
+                 alt="Foto check-in"
+                 style="width: 160px; height: 160px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--line); margin-bottom: 20px;">
+        @endif
+
+        <div>
+            @if ($todayAttendance->check_out)
+                <p style="font-size: 13px; color: var(--green-text); font-weight: 600;">
+                    Check-out selesai pukul {{ $todayAttendance->check_out->format('H:i:s') }} WIB
+                </p>
+            @else
+                <button class="btn btn-primary" id="btn-checkout">
+                    Check-out
+                </button>
+                <p id="checkout-message" style="font-size: 12.5px; color: var(--ink-500); margin-top: 10px;"></p>
+            @endif
+        </div>
+    </div>
+@else
     <div class="absensi-header">
         <h1>Absensi Hari Ini</h1>
         <p>Ikuti 3 langkah berikut untuk mencatat kehadiran Anda: verifikasi lokasi, ambil foto, lalu konfirmasi.</p>
@@ -663,27 +701,29 @@
             <div class="icon-circle valid" style="margin-inline:auto;">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <h2>Absensi Berhasil Dicatat (Contoh)</h2>
-            <p>Ini adalah simulasi tampilan sukses. Setelah backend tersedia, data ini akan benar-benar tersimpan dan riwayat absensi akan diperbarui secara otomatis.</p>
+            <h2>Absensi Berhasil Dicatat</h2>
+<p>Status: <strong id="success-status">–</strong> — Waktu Check-in: <strong id="success-time">–</strong></p>
             <a href="{{ route('dashboard') }}" class="btn btn-primary" style="display:inline-flex;">
                 Kembali ke Dashboard
             </a>
         </div>
     </div>
+@endif
 
 @endsection
 
 @section('extra-scripts')
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 (function () {
     "use strict";
 
     const OFFICE_LOCATION = {
-        latitude: -8.175420,
-        longitude: 113.689240,
-        radiusMeters: 100,
-    };
+    latitude: {{ $attendanceSetting->latitude }},
+    longitude: {{ $attendanceSetting->longitude }},
+    radiusMeters: {{ $attendanceSetting->radius }}
+};
 
     let currentStep = 1;
     let geoResult = null;
@@ -838,60 +878,202 @@
     }
 
     btnCheckLocation.addEventListener('click', function () {
-        if (!navigator.geolocation) {
-            setGeoState('denied', 'Geolocation Tidak Didukung', 'Browser Anda tidak mendukung fitur lokasi. Coba gunakan browser lain seperti Chrome atau Firefox terbaru.');
-            return;
-        }
 
-        setGeoState('loading', 'Mencari Lokasi Anda...', 'Mohon tunggu, sistem sedang mengambil koordinat perangkat Anda.');
-        btnCheckLocation.disabled = true;
+    // Kalau lokasi sudah valid, langsung lanjut ke Step 2
+    if (btnCheckLocation.dataset.locationValid === 'true') {
+        goToStep(2);
+        return;
+    }
 
-        navigator.geolocation.getCurrentPosition(
-            function (position) {
-                const { latitude, longitude, accuracy } = position.coords;
-                const distance = calculateDistanceMeters(
-                    latitude, longitude,
-                    OFFICE_LOCATION.latitude, OFFICE_LOCATION.longitude
-                );
-                const isValid = distance <= OFFICE_LOCATION.radiusMeters;
-
-                geoDistanceEl.textContent = formatMeters(distance);
-                geoAccuracyEl.textContent = '±' + Math.round(accuracy) + ' meter';
-
-                geoResult = { distance, accuracy, valid: isValid };
-
-                showOrUpdateMap(latitude, longitude, isValid);
-
-                if (isValid) {
-                    setGeoState('valid', 'Lokasi Anda Valid', 'Silakan lanjutkan ke pengambilan foto.');
-                    btnCheckLocation.style.display = 'none';
-                    btnToStep2.style.display = 'inline-flex';
-                    geoResolutionBox.style.display = 'none';
-                } else {
-                    setGeoState('invalid', 'Lihat posisi Anda di peta', 'Lokasi Anda berada di luar radius yang ditandai pada peta di bawah.');
-                    btnCheckLocation.disabled = false;
-                    btnCheckLocation.textContent = '';
-                    btnCheckLocation.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4v6h6M20 20v-6h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 10a8 8 0 0 1 14.9-3.5M20 14a8 8 0 0 1-14.9 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Cek Ulang Lokasi';
-
-                    geoResolutionBox.style.display = 'block';
-                    const attemptTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    geoLastAttempt.textContent = 'Percobaan terakhir pukul ' + attemptTime + ' WIB — jarak terdeteksi ' + formatMeters(distance) + ', melebihi batas ' + OFFICE_LOCATION.radiusMeters + ' meter.';
-                }
-            },
-            function (error) {
-                btnCheckLocation.disabled = false;
-                geoResolutionBox.style.display = 'none';
-                if (error.code === error.PERMISSION_DENIED) {
-                    setGeoState('denied', 'Izin Lokasi Ditolak', 'Anda menolak permintaan akses lokasi. Aktifkan izin lokasi untuk situs ini melalui pengaturan browser, lalu coba lagi.');
-                } else if (error.code === error.POSITION_UNAVAILABLE) {
-                    setGeoState('denied', 'Lokasi Tidak Tersedia', 'Sistem tidak dapat menentukan lokasi Anda saat ini. Pastikan GPS/layanan lokasi perangkat aktif.');
-                } else {
-                    setGeoState('denied', 'Waktu Habis', 'Permintaan lokasi memakan waktu terlalu lama. Periksa koneksi dan coba lagi.');
-                }
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    if (!navigator.geolocation) {
+        setGeoState(
+            'denied',
+            'Geolocation Tidak Didukung',
+            'Browser Anda tidak mendukung fitur lokasi.'
         );
-    });
+        return;
+    }
+
+    setGeoState(
+        'loading',
+        'Mencari Lokasi Anda...',
+        'Mohon tunggu, sistem sedang mengambil koordinat perangkat Anda.'
+    );
+
+    btnCheckLocation.disabled = true;
+
+    navigator.geolocation.getCurrentPosition(
+
+        function (position) {
+
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            const distance = calculateDistanceMeters(
+                latitude,
+                longitude,
+                OFFICE_LOCATION.latitude,
+                OFFICE_LOCATION.longitude
+            );
+
+            const isValid = distance <= OFFICE_LOCATION.radiusMeters;
+
+            geoDistanceEl.textContent = formatMeters(distance);
+            geoAccuracyEl.textContent =
+                '±' + Math.round(accuracy) + ' meter';
+
+            geoResult = {
+                latitude: latitude,
+                longitude: longitude,
+                distance: distance,
+                accuracy: accuracy,
+                valid: isValid
+            };
+
+            showOrUpdateMap(
+                latitude,
+                longitude,
+                isValid
+            );
+
+            if (isValid) {
+
+                setGeoState(
+                    'valid',
+                    'Lokasi Anda Valid',
+                    'Lokasi berada dalam radius kantor. Anda dapat melanjutkan ke pengambilan foto.'
+                );
+
+                btnCheckLocation.disabled = false;
+
+                // Tandai lokasi sudah valid
+                btnCheckLocation.dataset.locationValid = 'true';
+
+                // Ubah tombol menjadi tombol lanjut
+                btnCheckLocation.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 11l3 3 7-7"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"/>
+                        <path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"/>
+                    </svg>
+                    Lanjut Buka Kamera untuk Absensi
+                `;
+
+                // Tombol lama tidak diperlukan
+                btnToStep2.style.display = 'none';
+
+                geoResolutionBox.style.display = 'none';
+
+            } else {
+
+                setGeoState(
+                    'invalid',
+                    'Lihat posisi Anda di peta',
+                    'Lokasi Anda berada di luar radius yang ditandai pada peta di bawah.'
+                );
+
+                btnCheckLocation.disabled = false;
+
+                // Pastikan status valid dihapus
+                btnCheckLocation.dataset.locationValid = 'false';
+
+                btnCheckLocation.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 4v6h6M20 20v-6h-6"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"/>
+                        <path d="M4 10a8 8 0 0 1 14.9-3.5M20 14a8 8 0 0 1-14.9 3.5"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"/>
+                    </svg>
+                    Refresh Lokasi
+                `;
+
+                geoResolutionBox.style.display = 'block';
+
+                const attemptTime = new Date().toLocaleTimeString(
+                    'id-ID',
+                    {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    }
+                );
+
+                geoLastAttempt.textContent =
+                    'Percobaan terakhir pukul ' +
+                    attemptTime +
+                    ' WIB — jarak terdeteksi ' +
+                    formatMeters(distance) +
+                    ', melebihi batas ' +
+                    OFFICE_LOCATION.radiusMeters +
+                    ' meter.';
+            }
+        },
+
+        function (error) {
+
+            btnCheckLocation.disabled = false;
+
+            btnCheckLocation.dataset.locationValid = 'false';
+
+            geoResolutionBox.style.display = 'none';
+
+            if (error.code === 1) {
+
+    setGeoState(
+        'denied',
+        'Izin Lokasi Ditolak',
+        'Kode GPS: 1 — Browser mengembalikan PERMISSION_DENIED.'
+    );
+
+} else if (error.code === 2) {
+
+    setGeoState(
+        'denied',
+        'Lokasi Tidak Tersedia',
+        'Kode GPS: 2 — Browser tidak mendapatkan posisi perangkat.'
+    );
+
+} else if (error.code === 3) {
+
+    setGeoState(
+        'denied',
+        'Waktu Habis',
+        'Kode GPS: 3 — Pengambilan lokasi melebihi batas waktu.'
+    );
+
+            } else {
+
+                setGeoState(
+                    'denied',
+                    'Gagal Mendapatkan Lokasi',
+                    'Terjadi kesalahan saat mengambil lokasi. Silakan coba lagi.'
+                );
+            }
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 20000,
+            maximumAge: 10000
+        }
+    );
+});
 
     btnToStep2.addEventListener('click', function () {
         goToStep(2);
@@ -1023,9 +1205,45 @@
         btnToStep3.disabled = true;
     });
 
-    document.getElementById('btn-submit-absensi').addEventListener('click', function () {
-        goToStep(4);
-    });
+    const btnSubmitAbsensi = document.getElementById('btn-submit-absensi');
+
+btnSubmitAbsensi.addEventListener('click', function () {
+    btnSubmitAbsensi.disabled = true;
+    btnSubmitAbsensi.textContent = 'Mengirim...';
+
+    fetch('{{ route("absensi.check-in") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+        },
+        body: JSON.stringify({
+            photo: capturedPhotoDataUrl,
+        }),
+    })
+        .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+            if (data.success) {
+                document.getElementById('success-status').textContent =
+                    data.status === 'hadir' ? 'HADIR' : 'TERLAMBAT';
+                document.getElementById('success-time').textContent = data.check_in;
+                goToStep(4);
+            } else {
+                alert(data.message || 'Gagal mengirim absensi.');
+            }
+        })
+        .catch((err) => {
+            console.error(err);
+            alert('Terjadi kesalahan saat mengirim absensi. Coba lagi.');
+        })
+        .finally(() => {
+            btnSubmitAbsensi.disabled = false;
+            btnSubmitAbsensi.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Kirim Absensi
+            `;
+        });
+});
 
     window.addEventListener('beforeunload', stopCameraStream);
 
