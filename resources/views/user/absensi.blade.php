@@ -869,34 +869,100 @@
 
             btnCheckLocation.dataset.locationValid = 'false';
 
-            geoResolutionBox.style.display = 'none';
-
             if (error.code === 1) {
 
     setGeoState(
         'denied',
         'Izin Lokasi Ditolak',
-        'Kode GPS: 1 — Browser mengembalikan PERMISSION_DENIED.'
+        'Browser tidak dapat mengakses lokasi. Ini biasanya terjadi karena layanan lokasi Windows dimatikan, meskipun izin di browser sudah diberikan. Ikuti panduan di bawah untuk mengatasinya.'
     );
+
+    // Show the resolution box with specific PERMISSION_DENIED steps
+    geoResolutionBox.style.display = 'block';
+    geoResolutionBox.style.borderColor = '#f0c040';
+    geoResolutionBox.style.background = '#fffbe6';
+    geoResolutionBox.innerHTML = `
+        <p style="font-size: 13px; font-weight: 700; color: #b8860b; margin: 0 0 12px; display:flex; align-items:center; gap:7px;">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:15px; height:15px;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v.01M12 11v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Panduan Mengatasi Izin Lokasi Ditolak
+        </p>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+                <span style="flex-shrink:0; width:22px; height:22px; border-radius:999px; background:#b8860b; color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">1</span>
+                <div>
+                    <strong style="display:block; font-size:12.5px; color: var(--ink-900); margin-bottom:2px;">Aktifkan Layanan Lokasi Windows</strong>
+                    <span style="font-size:12px; color: var(--ink-700); line-height:1.6;">Buka <strong>Settings → Privacy & Security → Location</strong>, lalu pastikan:<br>
+                    • <em>Location services</em> = <strong>On</strong><br>
+                    • <em>Let apps access your location</em> = <strong>On</strong><br>
+                    • <em>Let desktop apps access your location</em> = <strong>On</strong></span>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+                <span style="flex-shrink:0; width:22px; height:22px; border-radius:999px; background:#b8860b; color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">2</span>
+                <div>
+                    <strong style="display:block; font-size:12.5px; color: var(--ink-900); margin-bottom:2px;">Periksa Izin Lokasi di Chrome</strong>
+                    <span style="font-size:12px; color: var(--ink-700); line-height:1.6;">Klik ikon gembok/info di sebelah kiri address bar, pastikan <strong>Location</strong> diatur ke <strong>Allow</strong>. Jika sudah Allow tapi masih error, coba hapus izin lalu berikan ulang.</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+                <span style="flex-shrink:0; width:22px; height:22px; border-radius:999px; background:#b8860b; color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">3</span>
+                <div>
+                    <strong style="display:block; font-size:12.5px; color: var(--ink-900); margin-bottom:2px;">Cek Pengaturan Lokasi Global Chrome</strong>
+                    <span style="font-size:12px; color: var(--ink-700); line-height:1.6;">Buka <strong>chrome://settings/content/location</strong> di address bar, pastikan tidak ada pemblokiran untuk situs ini dan pengaturan default bukan "Don't allow sites to see your location".</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+                <span style="flex-shrink:0; width:22px; height:22px; border-radius:999px; background:#b8860b; color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">4</span>
+                <div>
+                    <strong style="display:block; font-size:12.5px; color: var(--ink-900); margin-bottom:2px;">Restart Browser & Coba Lagi</strong>
+                    <span style="font-size:12px; color: var(--ink-700); line-height:1.6;">Setelah mengubah pengaturan di atas, tutup Chrome sepenuhnya lalu buka kembali halaman ini dan tekan tombol "Cek Lokasi" lagi.</span>
+                </div>
+            </div>
+        </div>
+        <p style="font-size:11.5px; color: var(--ink-500); margin: 14px 0 0; padding-top:12px; border-top:1px solid #f0c040;">
+            💡 <strong>Penyebab paling umum:</strong> Pada Windows, layanan lokasi di level OS harus aktif agar Chrome dapat mengakses GPS. Meskipun di browser sudah klik "Allow", jika Windows Location Services mati maka tetap akan muncul error PERMISSION_DENIED.
+        </p>
+    `;
+
+    // Change check button to retry
+    btnCheckLocation.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none"
+            xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 4v6h6M20 20v-6h-6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"/>
+            <path d="M4 10a8 8 0 0 1 14.9-3.5M20 14a8 8 0 0 1-14.9 3.5"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"/>
+        </svg>
+        Coba Lagi Setelah Mengubah Pengaturan
+    `;
 
 } else if (error.code === 2) {
 
+    geoResolutionBox.style.display = 'none';
     setGeoState(
         'denied',
         'Lokasi Tidak Tersedia',
-        'Kode GPS: 2 — Browser tidak mendapatkan posisi perangkat.'
+        'Kode GPS: 2 — Browser tidak mendapatkan posisi perangkat. Pastikan WiFi atau data seluler aktif untuk membantu penentuan posisi.'
     );
 
 } else if (error.code === 3) {
 
+    geoResolutionBox.style.display = 'none';
     setGeoState(
         'denied',
         'Waktu Habis',
-        'Kode GPS: 3 — Pengambilan lokasi melebihi batas waktu.'
+        'Kode GPS: 3 — Pengambilan lokasi melebihi batas waktu. Pastikan perangkat memiliki koneksi internet yang stabil dan layanan lokasi aktif.'
     );
 
             } else {
 
+                geoResolutionBox.style.display = 'none';
                 setGeoState(
                     'denied',
                     'Gagal Mendapatkan Lokasi',
