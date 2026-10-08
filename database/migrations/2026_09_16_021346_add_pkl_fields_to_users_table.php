@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('unit_rayon', 50)->nullable()->after('status');
         });
 
-        // Tambahkan 'peserta_pkl' ke enum role
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('user','admin','peserta_pkl') NOT NULL DEFAULT 'user'");
     }
 

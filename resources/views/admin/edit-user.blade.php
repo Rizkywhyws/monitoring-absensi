@@ -1,496 +1,187 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit User</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f7f8fc;
-            color: #263238
-        }
-        a {
-            text-decoration: none;
-            color: inherit
-        }
-        button,
-        input,
-        select {
-            font-family: inherit
-        }
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 250px;
-            height: 100vh;
-            background: #f0f2ff;
-            padding: 24px 16px
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 45px
-        }
-        .logo-box {
-            width: 54px;
-            height: 54px;
-            background: #007e6e;
-            color: white;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: bold
-        }
-        .logo-title {
-            color: #007e6e;
-            font-size: 19px;
-            font-weight: bold
-        }
-        .logo-subtitle {
-            color: #3f4748;
-            font-size: 14px;
-            margin-top: 4px;
-            font-weight: bold
-        }
-        .menu-title {
-            color: #6c7778;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 20px
-        }
-        .menu a {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            padding: 17px 18px;
-            border-radius: 12px;
-            margin-bottom: 8px;
-            font-size: 17px;
-            font-weight: 600;
-            color: #40494b
-        }
-        .menu a:hover {
-            background: #dfeeea
-        }
-        .menu a.active {
-            background: #008c78;
-            color: white
-        }
-        .admin-box {
-            position: absolute;
-            bottom: 25px;
-            left: 16px;
-            right: 16px;
-            background: #dfe5ff;
-            padding: 15px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            gap: 12px
-        }
-        .admin-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: #007e6e;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center
-        }
-        .admin-name {
-            font-weight: bold
-        }
-        .admin-role {
-            font-size: 13px;
-            color: #555;
-            margin-top: 3px
-        }
-        .content {
-            margin-left: 250px;
-            min-height: 100vh
-        }
-        .topbar {
-            height: 82px;
-            background: white;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 35px
-        }
-        .location {
-            background: #edf1ff;
-            padding: 11px 20px;
-            border-radius: 13px;
-            font-weight: bold
-        }
-        .top-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            font-weight: 600
-        }
-        .profile-circle {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: #007e6e;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center
-        }
-        .main {
-            padding: 32px 40px
-        }
-        .breadcrumb {
-            color: #6a7475;
-            font-size: 14px;
-            margin-bottom: 12px
-        }
-        .breadcrumb span {
-            color: #007e6e
-        }
-        .heading-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center
-        }
-        h1 {
-            font-size: 42px;
-            margin-bottom: 10px;
-            color: #151d36
-        }
-        .subtitle {
-            color: #485456;
-            font-size: 18px
-        }
-        .btn-back {
-            background: #e8ebf5;
-            color: #333;
-            padding: 14px 20px;
-            border-radius: 12px;
-            font-weight: bold
-        }
-        .btn-back:hover {
-            background: #dfe3ef
-        }
-        .card {
-            margin-top: 35px;
-            background: white;
-            border-radius: 18px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, .05)
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column
-        }
-        .form-group.full {
-            grid-column: 1/-1
-        }
-        label {
-            font-size: 15px;
-            font-weight: bold;
-            color: #37474f;
-            margin-bottom: 9px
-        }
-        input,
-        select {
-            width: 100%;
-            padding: 14px 16px;
-            border: 1px solid #dfe3eb;
-            border-radius: 10px;
-            background: #fafbff;
-            font-size: 15px;
-            outline: none
-        }
-        input:focus,
-        select:focus {
-            border-color: #007e6e;
-            background: white
-        }
-        .password-wrapper {
-            position: relative;
-            width: 100%
-        }
-        .password-wrapper input {
-            padding-right: 50px
-        }
-        .toggle-password {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 38px;
-            height: 38px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center
-        }
-        .toggle-password:hover {
-            background: #edf1ff;
-            border-radius: 8px
-        }
-        .password-info {
-            margin-top: 7px;
-            font-size: 13px;
-            color: #6c7778
-        }
-        .form-actions {
-            margin-top: 30px;
-            padding-top: 25px;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px
-        }
-        .btn-cancel {
-            padding: 14px 22px;
-            border: none;
-            border-radius: 10px;
-            background: #e8ebf5;
-            color: #333;
-            font-weight: bold;
-            cursor: pointer
-        }
-        .btn-save {
-            padding: 14px 25px;
-            border: none;
-            border-radius: 10px;
-            background: #007e6e;
-            color: white;
-            font-weight: bold;
-            cursor: pointer
-        }
-        .btn-save:hover {
-            background: #006b5e
-        }
-        .error-box {
-            margin-bottom: 25px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            background: #ffe0e0;
-            color: #8a2020
-        }
-        .error-box ul {
-            padding-left: 20px
-        }
-        .info-box {
-            margin-bottom: 25px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            background: #edf8f5;
-            color: #075c4e
-        }
-        .success-box {
-            margin-bottom: 25px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            background: #edf8f5;
-            color: #075c4e
-        }
-        @media(max-width:900px) {
-            .sidebar {
-                width: 80px
-            }
-            .logo-title,
-            .logo-subtitle,
-            .menu-title,
-            .menu span,
-            .admin-box div {
-                display: none
-            }
-            .content {
-                margin-left: 80px
-            }
-            .main {
-                padding: 25px
-            }
-            .form-grid {
-                grid-template-columns: 1fr
-            }
-            .form-group.full {
-                grid-column: auto
-            }
-        }
-    </style>
-</head>
-<body>
-    <aside class="sidebar">
-        <div class="logo">
-            <div class="logo-box">PLN</div>
-            <div>
-                <div class="logo-title">Icon Plus</div>
-                <div class="logo-subtitle">PKL MANAGEMENT</div>
-            </div>
-        </div>
-        <div class="menu-title">MENU UTAMA</div>
-        <nav class="menu">
-            <a href="{{ route('dashboard') }}"><span>▦</span><span>Dashboard</span></a>
-            <a href="{{ route('admin.daftar-user') }}" class="active"><span>♙</span><span>User</span></a>
-            <a href="{{ route('absensi') }}"><span>♧</span><span>Absensi</span></a>
-            <a href="#"><span>▣</span><span>Ticket</span></a>
-            <a href="#"><span>▤</span><span>Daily Activity</span></a>
-            <a href="#"><span>▤</span><span>Laporan</span></a>
-            <a href="#"><span>♙</span><span>Profil</span></a>
-        </nav>
-        <div class="admin-box">
-            <div class="admin-icon">♙</div>
-            <div>
-                <div class="admin-name">Admin PKL</div>
-                <div class="admin-role">Administrator</div>
-            </div>
-        </div>
-    </aside>
-    <div class="content">
-        <header class="topbar">
-            <div class="location">🏢 KP Jember - SBU Jatim</div>
-            <div class="top-right">
-                <span>📅 {{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
-                <span>●</span>
-                <div class="profile-circle">♙</div>
-                <span>Admin PKL</span>
-            </div>
-        </header>
-        <main class="main">
-            <div class="breadcrumb">ADMIN WORKSPACE &nbsp;›&nbsp; <span>EDIT USER</span></div>
-            <div class="heading-row">
-                <div>
-                    <h1>Edit User</h1>
-                    <div class="subtitle">Perbarui data peserta PKL PLN Icon Plus</div>
-                </div>
-                <a href="{{ route('admin.daftar-user') }}" class="btn-back">← Kembali</a>
-            </div>
-            @if($errors->any())
-                <div class="error-box">
-                    <ul>
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-            @if(session('success'))
-                <div class="success-box">
-                    {{ session('success') }}
-                </div>
-            @endif
-            @if(session('error'))
-                <div class="error-box">
-                    {{ session('error') }}
-                </div>
-            @endif
-            <div class="card">
-                <div class="info-box">
-                    <strong>Data peserta:</strong> {{ $user->name }}
-                </div>
-                <form action="{{ route('admin.daftar-user.update', ['id' => $user->id]) }}" method="POST">
-                    @csrf
-                    @method('PUT')
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Nama Lengkap</label>
-                            <input type="text" name="name" value="{{ old('name', $user->name) }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label>NIM</label>
-                            <input type="text" name="nim" value="{{ old('nim', $user->nim) }}" required>
-                        </div>
-                        <div class="form-group">
-    <label>Email Kampus</label>
-    <input type="email" name="email" value="{{ old('email', $user->email) }}" required>
-</div>
+@extends('layouts.app')
 
-<div class="form-group">
-    <label>Nama Mentor</label>
-    <input 
-        type="text" 
-        name="mentor" 
-        value="{{ old('mentor', $user->mentor) }}" 
-        placeholder="Masukkan nama mentor"
-    >
-                        </div>
+@section('title', 'Edit User - Sistem Manajemen PKL PLN Icon Plus')
 
-                        <div class="form-group">
-                            <label>Kelompok / Divisi</label>
-                            <input 
-                                type="text" 
-                                name="group_name" 
-                                value="{{ old('group_name', $user->group?->name) }}" 
-                                placeholder="Masukkan kelompok / divisi"
-                            >
-                        </div>
-                        <div class="form-group">
-                            <label>Tanggal Mulai PKL</label>
-                            <input type="date" name="periode_mulai" value="{{ old('periode_mulai', $user->periode_mulai ? $user->periode_mulai->format('Y-m-d') : '') }}">
-                        </div>
-                        <div class="form-group">
-                            <label>Tanggal Selesai PKL</label>
-                            <input type="date" name="periode_selesai" value="{{ old('periode_selesai', $user->periode_selesai ? $user->periode_selesai->format('Y-m-d') : '') }}">
-                        </div>
-                        <div class="form-group">
-                            <label>Status Akun</label>
-                            <select name="status" required>
-                                <option value="active" {{ old('status', $user->status) == 'active' ? 'selected' : '' }}>Aktif</option>
-                                <option value="inactive" {{ old('status', $user->status) == 'inactive' ? 'selected' : '' }}>Nonaktif</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Role</label>
-                            <input type="text" value="Peserta PKL" disabled>
-                        </div>
-                        <div class="form-group full">
-                            <label>Password Baru</label>
-                            <div class="password-wrapper">
-                                <input type="password" id="password" name="password" value="{{ old('password') }}" placeholder="Kosongkan jika tidak ingin mengubah password" minlength="6" maxlength="100" autocomplete="new-password">
-                                <button type="button" class="toggle-password" id="togglePassword" title="Tampilkan password">👁</button>
-                            </div>
-                            <div class="password-info">Kosongkan jika password lama tetap digunakan. Minimal 6 karakter jika ingin mengganti password.</div>
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <a href="{{ route('admin.daftar-user') }}" class="btn-cancel">Batal</a>
-                        <button type="submit" class="btn-save">Simpan Perubahan</button>
-                    </div>
-                </form>
+@section('breadcrumb', 'Admin Workspace › Edit User')
+
+@section('content')
+    @php
+        $inputClass =
+            'w-full px-4 py-2.5 rounded-lg bg-surface-bright text-on-surface font-body-md text-body-md border border-outline-variant placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary focus:bg-surface-container-lowest transition-all';
+        $labelClass = 'font-label-lg text-label-lg font-semibold text-on-surface mb-space-xs';
+    @endphp
+
+    <div class="flex flex-col w-full gap-space-lg">
+
+        {{-- Header halaman --}}
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+            <div class="flex flex-col min-w-0">
+                <span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold mb-1">
+                    Admin Workspace
+                </span>
+                <h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight leading-tight">Edit User</h1>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
+                    Perbarui data peserta PKL PLN Icon Plus
+                </p>
             </div>
-        </main>
+            <a href="{{ route('admin.daftar-user') }}"
+                class="shrink-0 inline-flex items-center justify-center gap-space-xs px-space-md py-2.5 rounded-xl bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface font-label-lg text-label-lg font-semibold shadow-sm transition-colors">
+                <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                <span>Kembali</span>
+            </a>
+        </div>
+
+        {{-- Notifikasi --}}
+        @if ($errors->any())
+            <div class="rounded-xl bg-error-container text-on-error-container px-space-md py-space-sm" role="alert">
+                <div class="flex items-center gap-space-xs font-label-lg text-label-lg font-bold mb-1">
+                    <span class="material-symbols-outlined text-[20px]">error</span>
+                    <span>Data belum bisa disimpan</span>
+                </div>
+                <ul class="list-disc pl-space-lg font-body-md text-body-md">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if (session('success'))
+            <div class="flex items-center gap-space-xs rounded-xl bg-primary-fixed/40 text-on-primary-fixed-variant px-space-md py-space-sm font-body-md text-body-md"
+                role="status">
+                <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                <span>{{ session('success') }}</span>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="flex items-center gap-space-xs rounded-xl bg-error-container text-on-error-container px-space-md py-space-sm font-body-md text-body-md"
+                role="alert">
+                <span class="material-symbols-outlined text-[20px]">error</span>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+
+        {{-- Form --}}
+        <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-lg">
+            <div
+                class="flex items-center gap-space-xs rounded-lg bg-surface-container-low px-space-md py-space-sm text-on-surface font-body-md text-body-md">
+                <span class="material-symbols-outlined text-primary text-[20px]">badge</span>
+                <span><strong class="font-semibold">Data peserta:</strong> {{ $user->name }}</span>
+            </div>
+
+            <form action="{{ route('admin.daftar-user.update', ['id' => $user->id]) }}" method="POST"
+                class="flex flex-col gap-space-lg">
+                @csrf
+                @method('PUT')
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+                    <div class="flex flex-col">
+                        <label for="name" class="{{ $labelClass }}">Nama Lengkap</label>
+                        <input type="text" id="name" name="name" value="{{ old('name', $user->name) }}"
+                            class="{{ $inputClass }}" required>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="nim" class="{{ $labelClass }}">NIM</label>
+                        <input type="text" id="nim" name="nim" value="{{ old('nim', $user->nim) }}"
+                            class="{{ $inputClass }}" required>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="email" class="{{ $labelClass }}">Email Kampus</label>
+                        <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}"
+                            class="{{ $inputClass }}" required>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="mentor" class="{{ $labelClass }}">Nama Mentor</label>
+                        <input type="text" id="mentor" name="mentor" value="{{ old('mentor', $user->mentor) }}"
+                            placeholder="Masukkan nama mentor" class="{{ $inputClass }}">
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="group_name" class="{{ $labelClass }}">Kelompok / Divisi</label>
+                        <input type="text" id="group_name" name="group_name"
+                            value="{{ old('group_name', $user->group?->name) }}"
+                            placeholder="Masukkan kelompok / divisi" class="{{ $inputClass }}">
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="status" class="{{ $labelClass }}">Status Akun</label>
+                        <select id="status" name="status" class="{{ $inputClass }}" required>
+                            <option value="active" @selected(old('status', $user->status) === 'active')>Aktif</option>
+                            <option value="inactive" @selected(old('status', $user->status) === 'inactive')>Nonaktif</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="periode_mulai" class="{{ $labelClass }}">Tanggal Mulai PKL</label>
+                        <input type="date" id="periode_mulai" name="periode_mulai"
+                            value="{{ old('periode_mulai', $user->periode_mulai?->format('Y-m-d')) }}"
+                            class="{{ $inputClass }}">
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="periode_selesai" class="{{ $labelClass }}">Tanggal Selesai PKL</label>
+                        <input type="date" id="periode_selesai" name="periode_selesai"
+                            value="{{ old('periode_selesai', $user->periode_selesai?->format('Y-m-d')) }}"
+                            class="{{ $inputClass }}">
+                    </div>
+
+                    <div class="flex flex-col md:col-span-2 md:max-w-[calc(50%-0.75rem)]">
+                        <label for="role_display" class="{{ $labelClass }}">Role</label>
+                        <input type="text" id="role_display" value="Peserta PKL" disabled
+                            class="{{ $inputClass }} opacity-70 cursor-not-allowed">
+                    </div>
+
+                    <div class="flex flex-col md:col-span-2">
+                        <label for="password" class="{{ $labelClass }}">Password Baru</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="password" name="password"
+                                placeholder="Kosongkan jika tidak ingin mengubah password" minlength="6"
+                                maxlength="100" autocomplete="new-password" class="{{ $inputClass }} pr-12">
+                            <button type="button" id="togglePassword" aria-label="Tampilkan password"
+                                class="absolute right-2 w-9 h-9 flex items-center justify-center rounded-lg text-outline hover:text-on-surface hover:bg-surface-container transition-colors">
+                                <span class="material-symbols-outlined text-[20px]" id="togglePasswordIcon">visibility</span>
+                            </button>
+                        </div>
+                        <p class="mt-space-xs font-body-sm text-body-sm text-on-surface-variant">
+                            Kosongkan jika password lama tetap digunakan. Minimal 6 karakter jika ingin mengganti password.
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    class="flex flex-col-reverse sm:flex-row sm:justify-end gap-space-sm pt-space-lg border-t border-surface-container">
+                    <a href="{{ route('admin.daftar-user') }}"
+                        class="inline-flex items-center justify-center px-space-lg py-2.5 rounded-lg bg-surface-container text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface font-label-lg text-label-lg font-semibold transition-colors">
+                        Batal
+                    </a>
+                    <button type="submit"
+                        class="inline-flex items-center justify-center gap-space-xs px-space-lg py-2.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold shadow-md hover:shadow-lg transition-all">
+                        <span class="material-symbols-outlined text-[20px]">save</span>
+                        <span>Simpan Perubahan</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+@endsection
+
+@section('extra-scripts')
     <script>
-        const passwordInput=document.getElementById('password');
-        const togglePassword=document.getElementById('togglePassword');
-        togglePassword.addEventListener('click',function(){
-            if(passwordInput.type==='password'){
-                passwordInput.type='text';
-                togglePassword.textContent='🙈';
-                togglePassword.title='Sembunyikan password';
-            }else{
-                passwordInput.type='password';
-                togglePassword.textContent='👁';
-                togglePassword.title='Tampilkan password';
-            }
-        });
+        (function() {
+            const input = document.getElementById('password');
+            const btn = document.getElementById('togglePassword');
+            const icon = document.getElementById('togglePasswordIcon');
+
+            btn?.addEventListener('click', () => {
+                const hidden = input.type === 'password';
+                input.type = hidden ? 'text' : 'password';
+                icon.textContent = hidden ? 'visibility_off' : 'visibility';
+                btn.setAttribute('aria-label', hidden ? 'Sembunyikan password' : 'Tampilkan password');
+            });
+        })();
     </script>
-</body>
-</html>
+@endsection

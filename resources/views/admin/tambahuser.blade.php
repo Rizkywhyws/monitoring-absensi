@@ -15,7 +15,6 @@
             'SBU Surabaya' => 'Kantor SBU Regional Jawa Timur - Ketintang Surabaya',
         ];
 
-        // type: text | email | date | tel | password | list (input + saran dari $groups) | select
         $sections = [
             [
                 'no' => '01', 'title' => 'Informasi Peserta PKL',
@@ -63,8 +62,6 @@
                 <span>Kembali</span>
             </a>
         </div>
-
-        {{-- Alerts --}}
         @if ($errors->any())
             <div class="p-space-md rounded-lg bg-error-container text-on-error-container">
                 <ul class="list-disc pl-5">
@@ -74,19 +71,7 @@
                 </ul>
             </div>
         @endif
-        @if (session('success'))
-            <div class="p-space-md rounded-lg bg-primary-fixed text-on-primary-fixed">{{ session('success') }}</div>
-        @endif
-        @if (session('kredensial'))
-            <div class="p-space-md rounded-lg bg-secondary-fixed text-on-secondary-fixed">
-                <p class="font-semibold mb-2">Akun berhasil dibuat.</p>
-                <p>Email Login: <strong>{{ session('kredensial.email_login') }}</strong></p>
-                <p>Password: <strong>{{ session('kredensial.password') }}</strong></p>
-                <p class="text-xs mt-2">Simpan informasi login ini karena password hanya ditampilkan setelah akun dibuat.</p>
-            </div>
-        @endif
 
-        {{-- Form --}}
         <form id="tambahUserForm" action="{{ route('admin.daftar-user.simpan') }}" method="POST" autocomplete="off"
             class="flex flex-col gap-space-xl">
             @csrf
@@ -219,7 +204,6 @@
                 toggle.title = show ? 'Sembunyikan password' : 'Tampilkan password';
             });
 
-            // Tanggal selesai tidak boleh sebelum tanggal mulai
             const mulai = document.getElementById('tanggalMulai');
             const selesai = document.getElementById('tanggalSelesai');
             const sync = () => {

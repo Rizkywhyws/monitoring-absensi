@@ -39,51 +39,144 @@
             display: none;
         }
 
-        /* ===== Pop up login berhasil ===== */
-        #successModal.is-open { animation: ls-backdrop-in .25s ease-out both; }
-        #successModal.is-open #successCard { animation: ls-card-in .45s cubic-bezier(.34, 1.4, .64, 1) both; }
-        #successModal.is-leaving { animation: ls-backdrop-out .25s ease-in both; }
-        #successModal.is-leaving #successCard { animation: ls-card-out .25s ease-in both; }
+        #successModal.is-open {
+            animation: ls-backdrop-in .1s ease-out both;
+        }
 
-        @keyframes ls-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes ls-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+        #successModal.is-open #successCard {
+            animation: ls-card-in .16s cubic-bezier(.2, .8, .2, 1) both;
+        }
+
+        #successModal.is-leaving {
+            animation: ls-backdrop-out .08s ease-in both;
+        }
+
+        #successModal.is-leaving #successCard {
+            animation: ls-card-out .08s ease-in both;
+        }
+
+        @keyframes ls-backdrop-in {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes ls-backdrop-out {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
         @keyframes ls-card-in {
-            from { opacity: 0; transform: translateY(24px) scale(.9); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(8px) scale(.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
+
         @keyframes ls-card-out {
-            from { opacity: 1; transform: translateY(0) scale(1); }
-            to { opacity: 0; transform: translateY(8px) scale(.97); }
+            from {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(4px) scale(.985);
+            }
         }
 
-        /* Lingkaran & centang tergambar, halo berdenyut sekali */
-        .ls-ring, .ls-check { stroke-dasharray: 1; stroke-dashoffset: 1; }
-        #successModal.is-open .ls-ring { animation: ls-draw .55s ease-out .25s forwards; }
-        #successModal.is-open .ls-check { animation: ls-draw .35s ease-out .65s forwards; }
-        @keyframes ls-draw { to { stroke-dashoffset: 0; } }
+        .ls-ring,
+        .ls-check {
+            stroke-dasharray: 1;
+            stroke-dashoffset: 1;
+        }
 
-        .ls-halo { opacity: 0; }
-        #successModal.is-open .ls-halo { animation: ls-halo 1.1s ease-out .6s both; }
+        #successModal.is-open .ls-ring {
+            animation: ls-draw .16s ease-out forwards;
+        }
+
+        #successModal.is-open .ls-check {
+            animation: ls-draw .14s ease-out .07s forwards;
+        }
+
+        @keyframes ls-draw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .ls-halo {
+            opacity: 0;
+        }
+
+        #successModal.is-open .ls-halo {
+            animation: ls-halo .25s ease-out both;
+        }
+
         @keyframes ls-halo {
-            from { transform: scale(.8); opacity: .5; }
-            to { transform: scale(1.6); opacity: 0; }
+            from {
+                transform: scale(.9);
+                opacity: .3;
+            }
+
+            to {
+                transform: scale(1.2);
+                opacity: 0;
+            }
         }
 
-        /* Teks naik halus & progress bar */
-        .ls-up { opacity: 0; }
-        #successModal.is-open .ls-up { animation: ls-up .4s ease-out forwards; }
+        .ls-up {
+            opacity: 0;
+        }
+
+        #successModal.is-open .ls-up {
+            animation: ls-up .12s ease-out forwards;
+        }
+
         @keyframes ls-up {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(3px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        #successBar { width: 0; }
-        #successModal.is-open #successBar { animation: ls-bar 1.15s cubic-bezier(.4, 0, .2, 1) .3s forwards; }
-        @keyframes ls-bar { to { width: 100%; } }
+        #successBar {
+            width: 0;
+        }
 
-        /* Hormati pengguna yang mematikan animasi di perangkatnya */
+        #successModal.is-open #successBar {
+            animation: ls-bar .45s linear forwards;
+        }
+
+        @keyframes ls-bar {
+            to {
+                width: 100%;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-            #successModal, #successModal * {
+
+            #successModal,
+            #successModal * {
                 animation-duration: .01ms !important;
                 animation-delay: 0s !important;
                 animation-iteration-count: 1 !important;
@@ -185,19 +278,71 @@
                         "headline-md": ["Plus Jakarta Sans"]
                     },
                     "fontSize": {
-                        "body-lg": ["16px", { "lineHeight": "26px", "letterSpacing": "0em", "fontWeight": "400" }],
-                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
-                        "headline-lg-mobile": ["22px", { "lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
-                        "body-sm": ["12px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "400" }],
-                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-                        "stat-counter": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-                        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }],
-                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
-                        "headline-xl-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-                        "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "700" }],
-                        "headline-sm": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }],
-                        "body-md": ["14px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }],
-                        "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                        "body-lg": ["16px", {
+                            "lineHeight": "26px",
+                            "letterSpacing": "0em",
+                            "fontWeight": "400"
+                        }],
+                        "label-md": ["12px", {
+                            "lineHeight": "16px",
+                            "letterSpacing": "0.02em",
+                            "fontWeight": "600"
+                        }],
+                        "headline-lg-mobile": ["22px", {
+                            "lineHeight": "30px",
+                            "letterSpacing": "-0.015em",
+                            "fontWeight": "700"
+                        }],
+                        "body-sm": ["12px", {
+                            "lineHeight": "18px",
+                            "letterSpacing": "0.01em",
+                            "fontWeight": "400"
+                        }],
+                        "headline-lg": ["28px", {
+                            "lineHeight": "36px",
+                            "letterSpacing": "-0.02em",
+                            "fontWeight": "700"
+                        }],
+                        "stat-counter": ["32px", {
+                            "lineHeight": "38px",
+                            "letterSpacing": "-0.02em",
+                            "fontWeight": "700"
+                        }],
+                        "label-sm": ["11px", {
+                            "lineHeight": "14px",
+                            "letterSpacing": "0.04em",
+                            "fontWeight": "700"
+                        }],
+                        "label-lg": ["14px", {
+                            "lineHeight": "20px",
+                            "letterSpacing": "0.01em",
+                            "fontWeight": "600"
+                        }],
+                        "headline-xl-mobile": ["28px", {
+                            "lineHeight": "36px",
+                            "letterSpacing": "-0.02em",
+                            "fontWeight": "700"
+                        }],
+                        "headline-xl": ["36px", {
+                            "lineHeight": "44px",
+                            "letterSpacing": "-0.025em",
+                            "fontWeight": "700"
+                        }],
+                        "headline-sm": ["16px", {
+                            "lineHeight": "24px",
+                            "letterSpacing": "0em",
+                            "fontWeight": "600"
+                        }],
+                        "body-md": ["14px", {
+                            "lineHeight": "22px",
+                            "letterSpacing": "0em",
+                            "fontWeight": "400"
+                        }],
+                        "headline-md": ["20px", {
+                            "lineHeight": "28px",
+                            "letterSpacing": "-0.01em",
+                            "fontWeight": "600"
+                        }]
                     }
                 },
             },
@@ -413,10 +558,10 @@
                                 class="w-full py-3 px-space-md rounded-lg bg-primary hover:bg-primary-container active:scale-[0.99] text-on-primary font-headline-sm text-headline-sm font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                                 type="submit">
                                 <span id="btnText">Masuk Sekarang</span>
-                                <svg id="btnSpinner" class="hidden animate-spin h-5 w-5 text-on-primary" fill="none"
-                                    viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                        stroke-width="4"></circle>
+                                <svg id="btnSpinner" class="hidden animate-spin h-5 w-5 text-on-primary"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor"
                                         d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                                 </svg>
@@ -432,7 +577,6 @@
         </div>
     </main>
 
-    <!-- POP UP LOGIN BERHASIL -->
     <div id="successModal"
         class="hidden fixed inset-0 z-50 flex items-center justify-center p-space-md bg-inverse-surface/40 backdrop-blur-sm"
         role="status" aria-live="polite">
@@ -461,7 +605,7 @@
     </div>
 
     <script>
-        (function () {
+        (function() {
             const passwordInput = document.getElementById('password');
             const toggleBtn = document.getElementById('toggle-password');
             const eyeIcon = document.getElementById('eye-icon');
@@ -502,26 +646,35 @@
             }
 
             function showSuccessModal(redirectUrl, name) {
-                if (name) successSub.textContent = 'Selamat datang, ' + name;
+                if (name) {
+                    successSub.textContent = 'Selamat datang, ' + name;
+                }
 
-                modal.classList.remove('hidden');
-                void modal.offsetWidth; 
-                modal.classList.add('is-open');
+                modal.classList.remove('hidden', 'is-leaving');
+
+                requestAnimationFrame(() => {
+                    modal.classList.add('is-open');
+                });
 
                 setTimeout(() => {
                     modal.classList.remove('is-open');
                     modal.classList.add('is-leaving');
-                }, reduceMotion ? 150 : 1450);
-                setTimeout(() => { window.location.href = redirectUrl; }, reduceMotion ? 300 : 1700);
+                }, reduceMotion ? 150 : 800);
+
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, reduceMotion ? 200 : 950);
             }
 
-            window.addEventListener('pageshow', function (e) {
+            window.addEventListener('pageshow', function(e) {
                 if (e.persisted) window.location.reload();
             });
 
             async function refreshCsrfToken() {
                 const res = await fetch('{{ route('login') }}', {
-                    headers: { 'Accept': 'text/html' },
+                    headers: {
+                        'Accept': 'text/html'
+                    },
                     credentials: 'same-origin',
                     cache: 'no-store',
                 });
@@ -549,7 +702,7 @@
                 });
             }
 
-            form.addEventListener('submit', async function (e) {
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 hideError();
                 setLoading(true);

@@ -5,26 +5,13 @@
 
 @section('content')
     @php
-        $groups = $groups ?? [
-            ['Install', 5, 'Bambang H. (Team Lead)', 'bg-primary', 'text-primary'],
-            ['PM OSP', 4, 'Rizal Wahyudi, S.T.', 'bg-secondary', 'text-secondary'],
-            ['Inventory', 3, 'Dewi Anggraini (Log)', 'bg-tertiary', 'text-tertiary'],
-            ['Support', 2, 'Eko Sulistyo (NOC)', 'bg-secondary-container', 'text-secondary'],
-        ];
+        // Semua data berasal dari Admin\DashboardController
         $groupTotal = max(array_sum(array_column($groups, 1)), 1);
 
-        $ticketProgress = $ticketProgress ?? 8;
-        $ticketDone = $ticketDone ?? 24;
-        $ticketTotal = max($ticketProgress + $ticketDone, 1);
-        $donePct = round(($ticketDone / $ticketTotal) * 100);
-        $progressPct = 100 - $donePct;
-
-        $activities = $activities ?? [
-            ['RA', 'Refangga Ardiansah', 'Install', '15:12', 'Menyelesaikan Ticket TKT-00025 (Pemasangan Patchcord ODF Gandul)', 'bg-primary text-on-primary'],
-            ['DP', 'Dimas Pratama', 'PM OSP', '07:54', 'Melakukan Check-in Absensi (32m dari KP Jember)', 'bg-secondary text-on-secondary'],
-            ['SN', 'Siti Nurhaliza', 'Inventory', '14:30', 'Submit Daily Activity Logbook (Penyusunan BAST Gudang Material Icon+)', 'bg-tertiary text-on-tertiary'],
-            ['AF', 'Ahmad Fauzi', 'Support', '13:45', 'Update Progres Ticket TKT-00026 (75% Splicing Joint Closure)', 'bg-secondary-container text-on-secondary-container'],
-        ];
+        $ticketTotalRaw = $ticketProgress + $ticketDone;
+        $ticketTotal = max($ticketTotalRaw, 1);
+        $donePct = $ticketTotalRaw > 0 ? (int) round(($ticketDone / $ticketTotal) * 100) : 0;
+        $progressPct = $ticketTotalRaw > 0 ? 100 - $donePct : 0;
     @endphp
 
     <div class="flex flex-col w-full">
@@ -58,9 +45,9 @@
         {{-- KPI --}}
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm mb-space-xl">
             @foreach ([
-                ['Total User', 14, 'Peserta Terdaftar', 'group', 'bg-surface-container-high text-primary', 'text-on-surface'],
-                ['User Aktif', 12, 'Sedang Aktif PKL', 'person_check', 'bg-primary-fixed text-on-primary-fixed', 'text-primary'],
-                ['Daily Activity', 11, 'Logbook Masuk', 'assignment_turned_in', 'bg-tertiary-fixed text-tertiary', 'text-tertiary'],
+                ['Total User', $totalUser, 'Peserta Terdaftar', 'group', 'bg-surface-container-high text-primary', 'text-on-surface'],
+                ['User Aktif', $userAktif, 'Sedang Aktif PKL', 'person_check', 'bg-primary-fixed text-on-primary-fixed', 'text-primary'],
+                ['Daily Activity', $logbookHariIni, 'Logbook Masuk Hari Ini', 'assignment_turned_in', 'bg-tertiary-fixed text-tertiary', 'text-tertiary'],
             ] as $k)
                 <div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between transition-transform hover:-translate-y-0.5 duration-200">
                     <div class="flex items-center justify-between mb-space-xs">
@@ -81,38 +68,50 @@
                 <div class="flex items-center justify-between mb-space-md">
                     <div class="flex flex-col">
                         <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Distribusi Peserta Berdasarkan Divisi</h2>
-                        <p class="font-body-sm text-body-sm text-on-surface-variant">Sebaran {{ $groupTotal }} peserta PKL dan mentor pembimbing lapangan</p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant">
+                            @if (count($groups))
+                                Sebaran {{ array_sum(array_column($groups, 1)) }} peserta PKL aktif dan mentor pembimbing lapangan
+                            @else
+                                Belum ada peserta aktif yang ditempatkan di kelompok
+                            @endif
+                        </p>
                     </div>
                     <span class="px-space-sm py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">{{ count($groups) }} Kelompok Kerja</span>
                 </div>
 
-                <div class="w-full h-4 rounded-full bg-surface-container-low flex gap-1 overflow-hidden p-0.5 mb-space-lg shadow-inner">
-                    @foreach ($groups as $g)
-                        <div class="h-full rounded-full {{ $g[3] }}" style="width: {{ round(($g[1] / $groupTotal) * 100, 1) }}%" title="{{ $g[0] }}"></div>
-                    @endforeach
-                </div>
+                @if (count($groups))
+                    <div class="w-full h-4 rounded-full bg-surface-container-low flex gap-1 overflow-hidden p-0.5 mb-space-lg shadow-inner">
+                        @foreach ($groups as $g)
+                            <div class="h-full rounded-full {{ $g[3] }}" style="width: {{ round(($g[1] / $groupTotal) * 100, 1) }}%" title="{{ $g[0] }}"></div>
+                        @endforeach
+                    </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-space-md">
-                    @foreach ($groups as $g)
-                        <div class="p-space-md rounded-xl bg-surface-container-low flex flex-col justify-between">
-                            <div class="flex items-center justify-between mb-space-sm">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-3 h-3 rounded-full {{ $g[3] }}"></span>
-                                    <span class="font-label-lg text-label-lg font-bold text-on-surface">{{ $g[0] }}</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-space-md">
+                        @foreach ($groups as $g)
+                            <div class="p-space-md rounded-xl bg-surface-container-low flex flex-col justify-between">
+                                <div class="flex items-center justify-between mb-space-sm gap-space-xs">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="w-3 h-3 rounded-full shrink-0 {{ $g[3] }}"></span>
+                                        <span class="font-label-lg text-label-lg font-bold text-on-surface truncate">{{ $g[0] }}</span>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-surface-container-lowest {{ $g[4] }} font-label-sm text-label-sm font-bold shrink-0">{{ round(($g[1] / $groupTotal) * 100, 1) }}%</span>
                                 </div>
-                                <span class="px-2 py-0.5 rounded-full bg-surface-container-lowest {{ $g[4] }} font-label-sm text-label-sm font-bold">{{ round(($g[1] / $groupTotal) * 100, 1) }}%</span>
+                                <div class="flex items-baseline gap-1.5 mb-2">
+                                    <span class="font-headline-md text-headline-md font-bold text-on-surface">{{ $g[1] }}</span>
+                                    <span class="font-body-sm text-body-sm text-on-surface-variant">Peserta</span>
+                                </div>
+                                <div class="mt-auto bg-surface-container-lowest/60 p-2 rounded-lg">
+                                    <div class="font-label-sm text-label-sm text-on-surface-variant">Mentor Lapangan:</div>
+                                    <div class="font-label-md text-label-md font-semibold text-on-surface truncate" title="{{ $g[2] }}">{{ $g[2] }}</div>
+                                </div>
                             </div>
-                            <div class="flex items-baseline gap-1.5 mb-2">
-                                <span class="font-headline-md text-headline-md font-bold text-on-surface">{{ $g[1] }}</span>
-                                <span class="font-body-sm text-body-sm text-on-surface-variant">Peserta</span>
-                            </div>
-                            <div class="mt-auto bg-surface-container-lowest/60 p-2 rounded-lg">
-                                <div class="font-label-sm text-label-sm text-on-surface-variant">Mentor Lapangan:</div>
-                                <div class="font-label-md text-label-md font-semibold text-on-surface truncate">{{ $g[2] }}</div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="py-space-xl text-center text-on-surface-variant font-body-md text-body-md">
+                        Data akan muncul setelah ada peserta aktif yang memiliki kelompok.
+                    </div>
+                @endif
             </div>
 
             {{-- Attendance & Ticket Overview --}}
@@ -131,24 +130,36 @@
                         <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
                             <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                                 <path class="text-surface-container-high" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
-                                <path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="83.3, 100" stroke-linecap="round" stroke-width="3.5"></path>
+                                <path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="{{ $absensi['persen'] }}, 100" stroke-linecap="round" stroke-width="3.5"></path>
                             </svg>
                             <div class="absolute inset-0 flex items-center justify-center">
-                                <span class="font-headline-sm text-headline-sm font-bold text-on-surface">83%</span>
+                                <span class="font-headline-sm text-headline-sm font-bold text-on-surface">{{ $absensi['persen'] }}%</span>
                             </div>
                         </div>
                         <div class="flex flex-col min-w-0">
                             <span class="font-label-md text-label-md font-bold text-on-surface">Tingkat Kehadiran Harian</span>
-                            <p class="font-body-sm text-body-sm text-on-surface-variant">10 dari 12 siswa aktif telah check-in di radius kantor.</p>
-                            <span class="font-label-sm text-label-sm text-primary font-semibold mt-1">Status Geofence: 250m Radius Valid</span>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant">
+                                @if ($absensi['wajib'] > 0)
+                                    {{ $absensi['sudah'] }} dari {{ $absensi['wajib'] }} peserta aktif telah check-in hari ini.
+                                @else
+                                    Tidak ada peserta aktif yang wajib absen hari ini.
+                                @endif
+                            </p>
+                            <span class="font-label-sm text-label-sm text-primary font-semibold mt-1">
+                                @if ($absensi['radius'])
+                                    Status Geofence: Radius {{ $absensi['radius'] }}m
+                                @else
+                                    Radius geofence belum diatur
+                                @endif
+                            </span>
                         </div>
                     </div>
 
                     <div class="flex flex-col gap-space-xs">
                         @foreach ([
-                            ['Hadir Tepat Waktu', '10 Peserta', 'bg-primary', 'bg-primary-fixed text-on-primary-fixed'],
-                            ['Terlambat (08:14 WIB)', '1 Peserta', 'bg-tertiary', 'bg-tertiary-fixed text-on-tertiary-fixed'],
-                            ['Belum Absen (Cut-off Alert)', '1 Peserta', 'bg-error', 'bg-error-container text-on-error-container'],
+                            ['Hadir Tepat Waktu', $absensi['hadir'] . ' Peserta', 'bg-primary', 'bg-primary-fixed text-on-primary-fixed'],
+                            ['Terlambat', $absensi['telat'] . ' Peserta', 'bg-tertiary', 'bg-tertiary-fixed text-on-tertiary-fixed'],
+                            ['Belum Absen', $absensi['belum'] . ' Peserta', 'bg-error', 'bg-error-container text-on-error-container'],
                         ] as $a)
                             <div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest">
                                 <div class="flex items-center gap-2">
@@ -174,11 +185,11 @@
                     <div class="mb-space-md bg-surface-container-low p-space-md rounded-xl">
                         <div class="flex items-center justify-between text-on-surface mb-2">
                             <span class="font-label-sm text-label-sm font-bold">Total Tiket</span>
-                            <span class="font-label-sm text-label-sm text-secondary font-semibold">{{ $ticketTotal }} Tiket</span>
+                            <span class="font-label-sm text-label-sm text-secondary font-semibold">{{ $ticketTotalRaw }} Tiket</span>
                         </div>
                         <div class="w-full h-3 rounded-full bg-surface-container-high flex overflow-hidden gap-0.5">
                             <div class="h-full bg-primary" style="width: {{ $donePct }}%" title="Done: {{ $ticketDone }}"></div>
-                            <div class="h-full bg-secondary-container" style="width: {{ $progressPct }}%" title="On Progress: {{ $ticketProgress }}"></div>
+                            <div class="h-full bg-secondary-container" style="width: {{ $progressPct }}%" title="Progress: {{ $ticketProgress }}"></div>
                         </div>
                         <div class="flex justify-between text-on-surface-variant font-label-sm text-label-sm mt-2">
                             <span>Done ({{ $donePct }}%)</span>
@@ -199,7 +210,6 @@
                 </div>
             </div>
 
-            {{-- Live Activity Feed: aktivitas saja, tanpa badge status --}}
             <div class="p-space-lg rounded-2xl bg-surface-container-lowest shadow-sm">
                 <div class="flex items-center justify-between mb-space-md">
                     <div class="flex items-center gap-space-xs">
@@ -208,11 +218,11 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                        <span class="font-label-sm text-label-sm text-on-surface-variant">Sinkronisasi Realtime</span>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">Diperbarui saat halaman dimuat</span>
                     </div>
                 </div>
                 <div class="flex flex-col gap-space-sm">
-                    @foreach ($activities as $a)
+                    @forelse ($activities as $a)
                         <div class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors flex items-start gap-space-sm min-w-0">
                             <div class="w-10 h-10 rounded-full {{ $a[5] }} flex items-center justify-center font-label-lg font-bold shrink-0">{{ $a[0] }}</div>
                             <div class="flex flex-col min-w-0">
@@ -224,7 +234,11 @@
                                 <p class="font-body-md text-body-md text-on-surface mt-0.5">{{ $a[4] }}</p>
                             </div>
                         </div>
-                    @endforeach
+                    @empty
+                        <div class="py-space-xl text-center text-on-surface-variant font-body-md text-body-md">
+                            Belum ada aktivitas peserta.
+                        </div>
+                    @endforelse
                 </div>
             </div>
         </div>

@@ -1,12 +1,21 @@
 <?php
 
 use App\Http\Controllers\Admin\DaftarUserController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\User\TicketController;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn() => view('welcome'));
+Route::get('/', function () {
+    if (Auth::check()) {
+        return redirect()->route(
+            Auth::user()->role === 'admin' ? 'admin.dashboard' : 'dashboard'
+        );
+    }
+    return redirect()->route('login');
+});
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -17,7 +26,7 @@ Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
 
-    Route::get('/dashboard', fn() => view('admin.dashboardAdmin'))->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::controller(DaftarUserController::class)->prefix('daftar-user')->name('daftar-user')->group(function () {
         Route::get('/', 'index');
@@ -36,6 +45,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function (Request $request) {
+        if ($request->user()->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
         $user = $request->user()->load('group');
 
         $mulai   = $user->periode_mulai?->translatedFormat('d M Y');
