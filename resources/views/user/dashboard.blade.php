@@ -1,4 +1,4 @@
-@extends('layouts.App')
+@extends('layouts.app')
 
 @section('title', 'Dashboard - Sistem Manajemen PKL PLN Icon Plus')
 
@@ -159,7 +159,7 @@
             </a>
         </div>
     </section>
-    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
         <div
             class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">
             <div class="flex items-center justify-between">
@@ -197,26 +197,6 @@
                 </span>
             </div>
             <span class="font-body-sm text-body-sm text-outline">Tervalidasi mentor &amp; supervisor</span>
-        </div>
-        <div
-            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">
-            <div class="flex items-center justify-between">
-                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Ticket
-                    Revisi</span>
-                <span
-                    class="w-8 h-8 rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[18px]">rate_review</span>
-                </span>
-            </div>
-            <div class="flex items-baseline justify-between pt-1">
-                <span class="font-stat-counter text-stat-counter font-bold text-tertiary">1</span>
-                <span
-                    class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
-                    Perlu Cek Segera
-                </span>
-            </div>
-            <span class="font-body-sm text-body-sm text-error font-medium truncate">Butuh foto ulang
-                dokumentasi drop core</span>
         </div>
         <div
             class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">

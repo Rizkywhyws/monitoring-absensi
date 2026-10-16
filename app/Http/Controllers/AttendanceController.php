@@ -11,7 +11,6 @@ class AttendanceController extends Controller
 {
     public function index()
 {
-    // TODO: ganti ke auth()->id() setelah fitur login selesai
     $userId = 1;
 
     $attendanceSetting = AttendanceSetting::where('status', 'active')->first();
@@ -29,8 +28,7 @@ class AttendanceController extends Controller
 }
     public function checkIn(Request $request)
 {
-    // TODO: ganti ke auth()->id() setelah fitur login selesai
-    $userId = 1;
+    $userId = auth()->id();
 
     $request->validate([
         'photo' => ['required', 'string'],
@@ -38,7 +36,6 @@ class AttendanceController extends Controller
 
     $today = now()->toDateString();
 
-    // Cegah check-in dobel di hari yang sama
     $existing = Attendance::where('user_id', $userId)
         ->where('attendance_date', $today)
         ->first();
@@ -50,10 +47,6 @@ class AttendanceController extends Controller
         ], 422);
     }
 
-    // --- Validasi lokasi GPS sementara di-skip (dummy) ---
-    // TODO: aktifkan lagi validasi radius asli setelah masalah GPS selesai
-
-    // Decode foto base64 (format: "data:image/jpeg;base64,XXXXX")
     $photoData = $request->photo;
     if (str_contains($photoData, ',')) {
         $photoData = explode(',', $photoData)[1];

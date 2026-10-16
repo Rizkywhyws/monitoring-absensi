@@ -45,41 +45,26 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * User berada di satu group.
-     */
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
     }
 
-    /**
-     * User memiliki banyak data absensi.
-     */
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
     }
 
-    /**
-     * User memiliki banyak ticket.
-     */
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
     }
 
-    /**
-     * User memiliki banyak aktivitas harian.
-     */
     public function dailyActivities(): HasMany
     {
         return $this->hasMany(DailyActivity::class);
     }
 
-    /**
-     * Ticket yang diverifikasi oleh user/admin ini.
-     */
     public function verifiedTickets(): HasMany
     {
         return $this->hasMany(Ticket::class, 'verified_by');

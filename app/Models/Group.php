@@ -13,9 +13,6 @@ class Group extends Model
         'status',
     ];
 
-    /**
-     * Satu group memiliki banyak user.
-     */
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
