@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\DailyActivityController;
 
 
 Route::get('/', function () {
@@ -29,6 +30,10 @@ Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/daily-activity', [DailyActivityController::class, 'index'])->name('daily-activity.index');
+    Route::get('/daily-activity/{user}', [DailyActivityController::class, 'show'])->name('daily-activity.show');
+    Route::post('/daily-activity/{user}', [DailyActivityController::class, 'store'])->name('daily-activity.store');
 
     Route::controller(DaftarUserController::class)->prefix('daftar-user')->name('daftar-user')->group(function () {
         Route::get('/', 'index');

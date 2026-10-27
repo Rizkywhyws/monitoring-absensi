@@ -417,7 +417,7 @@
             ['admin.daftar-user', 'User', 'group'],
             ['admin.absensi', 'Absensi', 'co_present'],
             ['admin.tickets', 'Ticket', 'confirmation_number'],
-            ['admin.daily-activity', 'Daily Activity', 'event_note'],
+            ['admin.daily-activity.index', 'Daily Activity', 'event_note'],
             ['admin.laporan', 'Laporan', 'assessment'],
             ['admin.notifikasi', 'Notifikasi', 'notifications', 3],
             ['admin.profil', 'Profil', 'manage_accounts'],
@@ -459,7 +459,7 @@
                 @if ($isAdmin)
                     @foreach ($adminMenu as $m)
                         @php
-                            $active = request()->routeIs($m[0] . '*');
+                            $active = request()->routeIs(\Illuminate\Support\Str::beforeLast($m[0], '.index') . '*');
                             $href = \Illuminate\Support\Facades\Route::has($m[0]) ? route($m[0]) : '#';
                         @endphp
                         <a href="{{ $href }}" class="{{ $navBase }} {{ $active ? $navActive : $navIdle }}"
@@ -541,7 +541,7 @@
                                 assignment
                             </span>
 
-                            <span>Daily Activity</span>
+                            <span>route'admin.daily-activity.</span>
                         </div>
                     </a>
                     <a class="{{ $navBase }} {{ $navIdle }}" href="#">
