@@ -22,7 +22,7 @@
 
 @section('content')
 
-@if ($todayAttendance)
+@if (!empty($todayAttendance))
     <div class="absensi-header">
         <h1>Absensi Hari Ini</h1>
         <p>Anda sudah melakukan check-in hari ini.</p>
@@ -60,37 +60,10 @@
         </div>
     </div>
 @else
-    <div class="absensi-header">
-        <h1>Absensi Hari Ini</h1>
-        <p>Ikuti 3 langkah berikut untuk mencatat kehadiran Anda: verifikasi lokasi, ambil foto, lalu konfirmasi.</p>
-
-        <div class="step-indicator">
-            <div class="step-dot-wrap">
-                <div class="step-dot active" id="dot-1">1</div>
-                <span class="step-label active" id="label-1">Verifikasi Lokasi</span>
-            </div>
-            <div class="step-line" id="line-1"></div>
-            <div class="step-dot-wrap">
-                <div class="step-dot" id="dot-2">2</div>
-                <span class="step-label" id="label-2">Ambil Foto</span>
-            </div>
-            <div class="step-line" id="line-2"></div>
-            <div class="step-dot-wrap">
-                <div class="step-dot" id="dot-3">3</div>
-                <span class="step-label" id="label-3">Konfirmasi</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="step-panel active" id="panel-1">
-        <div class="step-panel-head">
-            <div>
-                <h2>
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s7-6.5 7-11.5a7 7 0 1 0-14 0C5 14.5 12 21 12 21Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="9.5" r="2.3" stroke="currentColor" stroke-width="1.6"/></svg>
-                    Verifikasi Lokasi
-                </h2>
-                <p>Langkah 1 dari 3 — pastikan Anda berada di sekitar lokasi kantor/tempat magang.</p>
-            </div>
+<div class="flex flex-col w-full gap-space-lg">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-space-md">
+        <div class="flex flex-col gap-space-2xs">
+            <h1 class="font-headline-lg text-headline-lg text-on-surface">Absensi Hari Ini</h1>
             <p class="font-body-md text-body-md text-on-surface-variant">Catat kehadiran Anda hari ini
                 dengan verifikasi presisi geolokasi terintegrasi.</p>
         </div>
@@ -547,6 +520,7 @@
         </div>
     </div>
 </div>
+@endif
 @endsection
 
 @section('extra-scripts')
@@ -715,322 +689,34 @@
             setTimeout(() => { if (icon) icon.classList.remove('animate-spin'); }, 800);
         });
 
-    btnCheckLocation.addEventListener('click', function () {
-
-    // Kalau lokasi sudah valid, langsung lanjut ke Step 2
-    if (btnCheckLocation.dataset.locationValid === 'true') {
-        goToStep(2);
-        return;
-    }
-
-    if (!navigator.geolocation) {
-        setGeoState(
-            'denied',
-            'Geolocation Tidak Didukung',
-            'Browser Anda tidak mendukung fitur lokasi.'
-        );
-        return;
-    }
-
-    setGeoState(
-        'loading',
-        'Mencari Lokasi Anda...',
-        'Mohon tunggu, sistem sedang mengambil koordinat perangkat Anda.'
-    );
-
-    btnCheckLocation.disabled = true;
-
-    navigator.geolocation.getCurrentPosition(
-
-        function (position) {
-
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
-
-            const distance = calculateDistanceMeters(
-                latitude,
-                longitude,
-                OFFICE_LOCATION.latitude,
-                OFFICE_LOCATION.longitude
-            );
-
-            const isValid = distance <= OFFICE_LOCATION.radiusMeters;
-
-            geoDistanceEl.textContent = formatMeters(distance);
-            geoAccuracyEl.textContent =
-                '±' + Math.round(accuracy) + ' meter';
-
-            geoResult = {
-                latitude: latitude,
-                longitude: longitude,
-                distance: distance,
-                accuracy: accuracy,
-                valid: isValid
-            };
-
-            showOrUpdateMap(
-                latitude,
-                longitude,
-                isValid
-            );
-
-            if (isValid) {
-
-                setGeoState(
-                    'valid',
-                    'Lokasi Anda Valid',
-                    'Lokasi berada dalam radius kantor. Anda dapat melanjutkan ke pengambilan foto.'
-                );
-
-                btnCheckLocation.disabled = false;
-
-                // Tandai lokasi sudah valid
-                btnCheckLocation.dataset.locationValid = 'true';
-
-                // Ubah tombol menjadi tombol lanjut
-                btnCheckLocation.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 11l3 3 7-7"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"/>
-                        <path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"/>
-                    </svg>
-                    Lanjut Buka Kamera untuk Absensi
-                `;
-
-                // Tombol lama tidak diperlukan
-                btnToStep2.style.display = 'none';
-
-                geoResolutionBox.style.display = 'none';
-
-            } else {
-
-                setGeoState(
-                    'invalid',
-                    'Lihat posisi Anda di peta',
-                    'Lokasi Anda berada di luar radius yang ditandai pada peta di bawah.'
-                );
-
-                btnCheckLocation.disabled = false;
-
-                // Pastikan status valid dihapus
-                btnCheckLocation.dataset.locationValid = 'false';
-
-                btnCheckLocation.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 4v6h6M20 20v-6h-6"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"/>
-                        <path d="M4 10a8 8 0 0 1 14.9-3.5M20 14a8 8 0 0 1-14.9 3.5"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"/>
-                    </svg>
-                    Refresh Lokasi
-                `;
-
-                geoResolutionBox.style.display = 'block';
-
-                const attemptTime = new Date().toLocaleTimeString(
-                    'id-ID',
-                    {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                    }
-                );
-
-                geoLastAttempt.textContent =
-                    'Percobaan terakhir pukul ' +
-                    attemptTime +
-                    ' WIB — jarak terdeteksi ' +
-                    formatMeters(distance) +
-                    ', melebihi batas ' +
-                    OFFICE_LOCATION.radiusMeters +
-                    ' meter.';
-            }
-        },
-
-        function (error) {
-
-            btnCheckLocation.disabled = false;
-
-            btnCheckLocation.dataset.locationValid = 'false';
-
-            if (error.code === 1) {
-
-    setGeoState(
-        'denied',
-        'Izin Lokasi Ditolak',
-        'Browser tidak dapat mengakses lokasi. Ini biasanya terjadi karena layanan lokasi Windows dimatikan, meskipun izin di browser sudah diberikan. Ikuti panduan di bawah untuk mengatasinya.'
-    );
-
-    // Show the resolution box with specific PERMISSION_DENIED steps
-    geoResolutionBox.style.display = 'block';
-    geoResolutionBox.style.borderColor = '#f0c040';
-    geoResolutionBox.style.background = '#fffbe6';
-    geoResolutionBox.innerHTML = `
-        <p style="font-size: 13px; font-weight: 700; color: #b8860b; margin: 0 0 12px; display:flex; align-items:center; gap:7px;">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:15px; height:15px;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v.01M12 11v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            Panduan Mengatasi Izin Lokasi Ditolak
-        </p>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-            <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="flex-shrink:0; width:22px; height:22px; border-radius:999px; background:#b8860b; color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">1</span>
-                <div>
-                    <strong style="display:block; font-size:12.5px; color: var(--ink-900); margin-bottom:2px;">Aktifkan Layanan Lokasi Windows</strong>
-                    <span style="font-size:12px; color: var(--ink-700); line-height:1.6;">Buka <strong>Settings → Privacy & Security → Location</strong>, lalu pastikan:<br>
-                    • <em>Location services</em> = <strong>On</strong><br>
-                    • <em>Let apps access your location</em> = <strong>On</strong><br>
-                    • <em>Let desktop apps access your location</em> = <strong>On</strong></span>
-                </div>
-            </div>
-            <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="flex-shrink:0; width:22px; height:22px; border-radius:999px; background:#b8860b; color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">2</span>
-                <div>
-                    <strong style="display:block; font-size:12.5px; color: var(--ink-900); margin-bottom:2px;">Periksa Izin Lokasi di Chrome</strong>
-                    <span style="font-size:12px; color: var(--ink-700); line-height:1.6;">Klik ikon gembok/info di sebelah kiri address bar, pastikan <strong>Location</strong> diatur ke <strong>Allow</strong>. Jika sudah Allow tapi masih error, coba hapus izin lalu berikan ulang.</span>
-                </div>
-            </div>
-            <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="flex-shrink:0; width:22px; height:22px; border-radius:999px; background:#b8860b; color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">3</span>
-                <div>
-                    <strong style="display:block; font-size:12.5px; color: var(--ink-900); margin-bottom:2px;">Cek Pengaturan Lokasi Global Chrome</strong>
-                    <span style="font-size:12px; color: var(--ink-700); line-height:1.6;">Buka <strong>chrome://settings/content/location</strong> di address bar, pastikan tidak ada pemblokiran untuk situs ini dan pengaturan default bukan "Don't allow sites to see your location".</span>
-                </div>
-            </div>
-            <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="flex-shrink:0; width:22px; height:22px; border-radius:999px; background:#b8860b; color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">4</span>
-                <div>
-                    <strong style="display:block; font-size:12.5px; color: var(--ink-900); margin-bottom:2px;">Restart Browser & Coba Lagi</strong>
-                    <span style="font-size:12px; color: var(--ink-700); line-height:1.6;">Setelah mengubah pengaturan di atas, tutup Chrome sepenuhnya lalu buka kembali halaman ini dan tekan tombol "Cek Lokasi" lagi.</span>
-                </div>
-            </div>
-        </div>
-        <p style="font-size:11.5px; color: var(--ink-500); margin: 14px 0 0; padding-top:12px; border-top:1px solid #f0c040;">
-            💡 <strong>Penyebab paling umum:</strong> Pada Windows, layanan lokasi di level OS harus aktif agar Chrome dapat mengakses GPS. Meskipun di browser sudah klik "Allow", jika Windows Location Services mati maka tetap akan muncul error PERMISSION_DENIED.
-        </p>
-    `;
-
-    // Change check button to retry
-    btnCheckLocation.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none"
-            xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 4v6h6M20 20v-6h-6"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"/>
-            <path d="M4 10a8 8 0 0 1 14.9-3.5M20 14a8 8 0 0 1-14.9 3.5"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"/>
-        </svg>
-        Coba Lagi Setelah Mengubah Pengaturan
-    `;
-
-} else if (error.code === 2) {
-
-    geoResolutionBox.style.display = 'none';
-    setGeoState(
-        'denied',
-        'Lokasi Tidak Tersedia',
-        'Kode GPS: 2 — Browser tidak mendapatkan posisi perangkat. Pastikan WiFi atau data seluler aktif untuk membantu penentuan posisi.'
-    );
-
-} else if (error.code === 3) {
-
-    geoResolutionBox.style.display = 'none';
-    setGeoState(
-        'denied',
-        'Waktu Habis',
-        'Kode GPS: 3 — Pengambilan lokasi melebihi batas waktu. Pastikan perangkat memiliki koneksi internet yang stabil dan layanan lokasi aktif.'
-    );
-
-            } else {
-
-                geoResolutionBox.style.display = 'none';
-                setGeoState(
-                    'denied',
-                    'Gagal Mendapatkan Lokasi',
-                    'Terjadi kesalahan saat mengambil lokasi. Silakan coba lagi.'
-                );
-            }
-        },
-
-        {
-            enableHighAccuracy: true,
-            timeout: 20000,
-            maximumAge: 10000
-        }
-    );
-});
-
-    btnToStep2.addEventListener('click', function () {
-        goToStep(2);
-    });
-
-    const cameraWrap = document.getElementById('camera-wrap');
-    const cameraPlaceholder = document.getElementById('camera-placeholder');
-    const cameraVideo = document.getElementById('camera-video');
-    const cameraCanvas = document.getElementById('camera-canvas');
-    const cameraGuide = document.getElementById('camera-guide');
-    const capturedPhotoImg = document.getElementById('captured-photo');
-    const camBadge = document.getElementById('cam-badge');
-    const btnStartCamera = document.getElementById('btn-start-camera');
-    const btnTakePhoto = document.getElementById('btn-take-photo');
-    const btnRetakePhoto = document.getElementById('btn-retake-photo');
-    const btnToStep3 = document.getElementById('btn-to-step-3');
-    const cameraErrorNote = document.getElementById('camera-error-note');
-    const cameraErrorText = document.getElementById('camera-error-text');
-
-    btnStartCamera.addEventListener('click', async function () {
-        cameraErrorNote.style.display = 'none';
-
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            cameraErrorText.textContent = 'Browser ini tidak mendukung akses kamera. Coba gunakan browser lain.';
-            cameraErrorNote.style.display = 'flex';
-            return;
         setTimeout(() => map.invalidateSize(), 200);
 
+        // --- Modal Check-in (Kamera & GPS) ---
         const checkinBtn = document.getElementById('btn-checkin');
         const modal = document.getElementById('checkin-modal');
         const closeBtn = document.getElementById('modal-close');
         const cancelBtn = document.getElementById('modal-cancel-btn');
         const submitBtn = document.getElementById('modal-submit-btn');
         const video = document.getElementById('camera-preview');
-        const cameraPlaceholder = document.getElementById('camera-placeholder');
+        const camPlaceholder = document.getElementById('camera-placeholder');
         let mediaStream = null;
 
         async function startCamera() {
             if (!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia) {
-                cameraPlaceholder.innerHTML =
+                camPlaceholder.innerHTML =
                     '<span class="material-symbols-outlined text-[36px]">videocam_off</span><span>Kamera tidak didukung di perangkat/browser ini.</span>';
                 return;
             }
             try {
                 mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
                 video.srcObject = mediaStream;
-                cameraPlaceholder.classList.add('hidden');
+                camPlaceholder.classList.add('hidden');
             } catch (err) {
                 let msg = 'Tidak dapat mengakses kamera.';
                 if (err && err.name === 'NotAllowedError') msg = 'Izin kamera ditolak. Aktifkan izin kamera di pengaturan browser.';
                 if (err && err.name === 'NotFoundError') msg = 'Tidak ada kamera yang terdeteksi pada perangkat ini.';
-                cameraPlaceholder.innerHTML = `<span class="material-symbols-outlined text-[36px]">videocam_off</span><span>${msg}</span>`;
-                cameraPlaceholder.classList.remove('hidden');
+                camPlaceholder.innerHTML = `<span class="material-symbols-outlined text-[36px]">videocam_off</span><span>${msg}</span>`;
+                camPlaceholder.classList.remove('hidden');
             }
         }
 
@@ -1040,8 +726,8 @@
                 mediaStream = null;
             }
             video.srcObject = null;
-            cameraPlaceholder.classList.remove('hidden');
-            cameraPlaceholder.innerHTML = '<span class="material-symbols-outlined text-[36px]">videocam</span><span>Menunggu izin akses kamera…</span>';
+            camPlaceholder.classList.remove('hidden');
+            camPlaceholder.innerHTML = '<span class="material-symbols-outlined text-[36px]">videocam</span><span>Menunggu izin akses kamera…</span>';
         }
 
         if (checkinBtn && modal) {
@@ -1079,60 +765,7 @@
             });
         }
 
-        goToStep(3);
-    });
-
-    document.getElementById('btn-back-to-2').addEventListener('click', function () {
-        goToStep(2);
-        capturedPhotoImg.style.display = 'none';
-        cameraPlaceholder.style.display = 'flex';
-        btnRetakePhoto.style.display = 'none';
-        btnStartCamera.style.display = 'inline-flex';
-        btnToStep3.disabled = true;
-    });
-
-    const btnSubmitAbsensi = document.getElementById('btn-submit-absensi');
-
-btnSubmitAbsensi.addEventListener('click', function () {
-    btnSubmitAbsensi.disabled = true;
-    btnSubmitAbsensi.textContent = 'Mengirim...';
-
-    fetch('{{ route("absensi.check-in") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-        },
-        body: JSON.stringify({
-            photo: capturedPhotoDataUrl,
-        }),
-    })
-        .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-        .then(({ ok, data }) => {
-            if (data.success) {
-                document.getElementById('success-status').textContent =
-                    data.status === 'hadir' ? 'HADIR' : 'TERLAMBAT';
-                document.getElementById('success-time').textContent = data.check_in;
-                goToStep(4);
-            } else {
-                alert(data.message || 'Gagal mengirim absensi.');
-            }
-        })
-        .catch((err) => {
-            console.error(err);
-            alert('Terjadi kesalahan saat mengirim absensi. Coba lagi.');
-        })
-        .finally(() => {
-            btnSubmitAbsensi.disabled = false;
-            btnSubmitAbsensi.innerHTML = `
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Kirim Absensi
-            `;
-        });
-});
-
-    window.addEventListener('beforeunload', stopCameraStream);
-
-})();
+        window.addEventListener('beforeunload', stopCamera);
+    })();
 </script>
 @endsection
