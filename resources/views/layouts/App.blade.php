@@ -410,14 +410,21 @@
             ->map(fn($w) => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($w, 0, 1)))
             ->implode('');
 
+        // Grup menu yang terbuka otomatis saat halaman terkait sedang dibuka
         $ticketGroupOpen = request()->routeIs('tickets', 'ticket.*');
+        $absensiGroupOpen = request()->routeIs('absensi', 'absensi.*');
+
+        // Link "Riwayat Absensi" jatuh ke '#' selama route absensi.riwayat belum dibuat
+        $riwayatAbsensiUrl = \Illuminate\Support\Facades\Route::has('absensi.riwayat')
+            ? route('absensi.riwayat')
+            : '#';
 
         $adminMenu = [
             ['admin.dashboard', 'Dashboard', 'grid_view'],
             ['admin.daftar-user', 'User', 'group'],
             ['admin.absensi', 'Absensi', 'co_present'],
             ['admin.tickets', 'Ticket', 'confirmation_number'],
-            ['admin.daily-activity', 'Daily Activity', 'event_note'],
+            ['admin.daily-activity.index', 'Daily Activity', 'event_note'],
             ['admin.laporan', 'Laporan', 'assessment'],
             ['admin.notifikasi', 'Notifikasi', 'notifications', 3],
             ['admin.profil', 'Profil', 'manage_accounts'],
@@ -459,7 +466,7 @@
                 @if ($isAdmin)
                     @foreach ($adminMenu as $m)
                         @php
-                            $active = request()->routeIs($m[0] . '*');
+                            $active = request()->routeIs(\Illuminate\Support\Str::beforeLast($m[0], '.index') . '*');
                             $href = \Illuminate\Support\Facades\Route::has($m[0]) ? route($m[0]) : '#';
                         @endphp
                         <a href="{{ $href }}" class="{{ $navBase }} {{ $active ? $navActive : $navIdle }}"
@@ -481,6 +488,7 @@
                         </a>
                     @endforeach
                 @else
+                    {{-- Dashboard --}}
                     <a class="{{ $navBase }} {{ request()->routeIs('dashboard') ? $navActive : $navIdle }}"
                         href="{{ route('dashboard') }}" @if (request()->routeIs('dashboard')) aria-current="page" @endif>
 
@@ -492,17 +500,42 @@
                             <span>Dashboard</span>
                         </div>
                     </a>
-                    <a class="{{ $navBase }} {{ request()->routeIs('absensi') ? $navActive : $navIdle }}"
-                        href="{{ route('absensi') }}" @if (request()->routeIs('absensi')) aria-current="page" @endif>
 
-                        <div class="flex items-center gap-space-sm">
-                            <span class="material-symbols-outlined text-[20px]">
-                                schedule
+                    {{-- Absensi (dropdown: Absen & Riwayat Absensi) --}}
+                    <div class="flex flex-col gap-space-2xs">
+                        <button type="button" data-toggle="submenu" aria-controls="submenuAbsensi"
+                            aria-expanded="{{ $absensiGroupOpen ? 'true' : 'false' }}"
+                            class="w-full {{ $navBase }} {{ $absensiGroupOpen ? 'text-on-surface font-semibold' : $navIdle }}">
+
+                            <div class="flex items-center gap-space-sm">
+                                <span class="material-symbols-outlined text-[20px]">
+                                    schedule
+                                </span>
+                                <span>Absensi</span>
+                            </div>
+                            <span data-chevron
+                                class="material-symbols-outlined text-[18px] transition-transform duration-150 {{ $absensiGroupOpen ? 'rotate-180' : '' }}">
+                                expand_more
                             </span>
-                            <span>Absensi</span>
+                        </button>
+                        <div id="submenuAbsensi"
+                            class="pl-space-md flex flex-col gap-space-2xs {{ $absensiGroupOpen ? '' : 'hidden' }}">
+
+                            <a href="{{ route('absensi') }}"
+                                class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('absensi') ? $navActive : $navIdle }}"
+                                @if (request()->routeIs('absensi')) aria-current="page" @endif>
+                                Absen
+                            </a>
+
+                            <a href="{{ $riwayatAbsensiUrl }}"
+                                class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('absensi.riwayat') ? $navActive : $navIdle }}"
+                                @if (request()->routeIs('absensi.riwayat')) aria-current="page" @endif>
+                                Riwayat Absensi
+                            </a>
                         </div>
-                        <span class="w-2 h-2 rounded-full bg-primary"></span>
-                    </a>
+                    </div>
+
+                    {{-- Tiket Penugasan (dropdown) --}}
                     <div class="flex flex-col gap-space-2xs">
                         <button type="button" data-toggle="submenu" aria-controls="submenuTicket"
                             aria-expanded="{{ $ticketGroupOpen ? 'true' : 'false' }}"
@@ -535,6 +568,8 @@
                             </a>
                         </div>
                     </div>
+
+                    {{-- Daily Activity --}}
                     <a class="{{ $navBase }} {{ $navIdle }}" href="#">
                         <div class="flex items-center gap-space-sm">
                             <span class="material-symbols-outlined text-[20px]">
@@ -544,6 +579,8 @@
                             <span>Daily Activity</span>
                         </div>
                     </a>
+
+                    {{-- Notifikasi --}}
                     <a class="{{ $navBase }} {{ $navIdle }}" href="#">
                         <div class="flex items-center gap-space-sm">
                             <span class="material-symbols-outlined text-[20px]">
@@ -557,6 +594,8 @@
                             3
                         </span>
                     </a>
+
+                    {{-- Profil --}}
                     <a class="{{ $navBase }} {{ $navIdle }}" href="{{ $profileUrl ?? '#' }}">
                         <div class="flex items-center gap-space-sm">
                             <span class="material-symbols-outlined text-[20px]">
@@ -749,7 +788,7 @@
             <div class="px-space-xl pt-space-xl pb-space-lg flex flex-col items-center">
                 <div class="relative w-20 h-20 mb-space-md flex items-center justify-center">
                     <div class="absolute inset-0 rounded-full bg-error/10"></div>
-                    <sVg class="relative w-12 h-12 text-error" viewBox="0 0 52 52" fill="none"
+                    <svg class="relative w-12 h-12 text-error" viewBox="0 0 52 52" fill="none"
                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                         <circle class="pp-ring" cx="26" cy="26" r="24" pathLength="1"></circle>
                         <path class="pp-mark" d="M26 15 v14 M26 36 v.5" pathLength="1"></path>
@@ -795,6 +834,8 @@
             }
             menuBtn?.addEventListener('click', toggleSidebar);
             backdrop?.addEventListener('click', toggleSidebar);
+
+            // Dropdown submenu sidebar (Absensi & Tiket Penugasan)
             document.querySelectorAll('[data-toggle="submenu"]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const menu = document.getElementById(

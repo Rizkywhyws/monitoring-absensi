@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\AttendanceSetting;
+use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,7 +35,7 @@ class AttendanceController extends Controller
             ->explode(' ')
             ->filter()
             ->take(2)
-            ->map(fn ($part) => Str::upper(Str::substr($part, 0, 1)))
+            ->map(fn($part) => Str::upper(Str::substr($part, 0, 1)))
             ->implode('');
 
         $setting = AttendanceSetting::where('status', 'active')->first();
@@ -54,6 +55,79 @@ class AttendanceController extends Controller
             'lateAfter' => now()->setTimeFromTimeString(self::LATE_AFTER),
             'maxAccuracy' => self::MAX_ACCURACY_METERS,
         ]);
+    }
+
+    public function riwayat(Request $request)
+    {
+        $months = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+
+        $month = (int) $request->query('bulan', now()->month);
+        if (! isset($months[$month])) {
+            $month = now()->month;
+        }
+
+        $year = (int) $request->query('tahun', now()->year);
+        if ($year < 2000 || $year > 2100) {
+            $year = now()->year;
+        }
+
+        $status = $request->query('status');
+        if (! in_array($status, ['hadir', 'telat'], true)) {
+            $status = null;
+        }
+
+        $userId = $request->user()->id;
+        $start  = Carbon::create($year, $month, 1)->startOfMonth();
+        $end    = $start->copy()->endOfMonth();
+
+        $monthQuery = Attendance::where('user_id', $userId)
+            ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()]);
+
+        $monthRows = (clone $monthQuery)->get(['status', 'check_in', 'check_out']);
+
+        $durations = $monthRows
+            ->filter(fn($r) => $r->check_in && $r->check_out)
+            ->map(fn($r) => intdiv($r->check_out->getTimestamp() - $r->check_in->getTimestamp(), 60));
+
+        $summary = [
+            'total'       => $monthRows->count(),
+            'hadir'       => $monthRows->where('status', 'hadir')->count(),
+            'telat'       => $monthRows->where('status', 'telat')->count(),
+            'avg_minutes' => $durations->isNotEmpty() ? (int) round($durations->avg()) : null,
+        ];
+
+        $attendances = (clone $monthQuery)
+            ->when($status, fn($q) => $q->where('status', $status))
+            ->orderByDesc('attendance_date')
+            ->paginate(10)
+            ->withQueryString();
+
+        $earliest  = Attendance::where('user_id', $userId)->min('attendance_date');
+        $firstYear = $earliest ? Carbon::parse($earliest)->year : now()->year;
+        $years     = range(now()->year, min($firstYear, now()->year));
+
+        return view('user.riwayatAbsensi', compact(
+            'attendances',
+            'months',
+            'month',
+            'year',
+            'years',
+            'status',
+            'summary'
+        ));
     }
 
     public function checkIn(Request $request): JsonResponse
