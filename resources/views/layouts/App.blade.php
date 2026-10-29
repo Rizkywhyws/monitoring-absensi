@@ -530,7 +530,7 @@
                                 assignment
                             </span>
 
-                            <span>route'admin.daily-activity.</span>
+                            <span>Daily Activity</span>
                         </div>
                     </a>
                     <a class="{{ $navBase }} {{ $navIdle }}" href="#">
