@@ -159,194 +159,174 @@
             </a>
         </div>
     </section>
+
+    {{-- ================= 3 Kartu Statistik: Tiket, Hadir, Tidak Hadir ================= --}}
     <section class="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
+        {{-- Total Tiket --}}
         <div
             class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">
             <div class="flex items-center justify-between">
-                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Ticket
-                    Aktif</span>
+                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Total
+                    Tiket</span>
                 <span
                     class="w-8 h-8 rounded-lg bg-secondary-fixed text-on-secondary-fixed-variant flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[18px]">assignment_late</span>
+                    <span class="material-symbols-outlined text-[18px]">confirmation_number</span>
                 </span>
             </div>
             <div class="flex items-baseline justify-between pt-1">
-                <span class="font-stat-counter text-stat-counter font-bold text-on-surface">2</span>
+                <span class="font-stat-counter text-stat-counter font-bold text-on-surface">{{ $totalTiket ?? 0 }}</span>
                 <span
                     class="px-space-xs py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-bold">
-                    Sedang Dikerjakan
+                    {{ $tiketSelesai ?? 0 }} Selesai
                 </span>
             </div>
-            <span class="font-body-sm text-body-sm text-outline">Target penyelesaian hari ini</span>
+            <span class="font-body-sm text-body-sm text-outline">Seluruh tiket penugasan kamu</span>
         </div>
+
+        {{-- Total Absen Hadir --}}
         <div
             class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">
             <div class="flex items-center justify-between">
-                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Ticket
-                    Selesai</span>
+                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Total
+                    Absen Hadir</span>
                 <span
                     class="w-8 h-8 rounded-lg bg-primary-fixed text-on-primary-fixed-variant flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[18px]">task_alt</span>
+                    <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
                 </span>
             </div>
             <div class="flex items-baseline justify-between pt-1">
-                <span class="font-stat-counter text-stat-counter font-bold text-primary">18</span>
+                <span class="font-stat-counter text-stat-counter font-bold text-primary">{{ $totalHadir ?? 0 }}</span>
                 <span
                     class="px-space-xs py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">
-                    Bulan Ini
+                    {{ $totalTelat ?? 0 }} Telat
                 </span>
             </div>
-            <span class="font-body-sm text-body-sm text-outline">Tervalidasi mentor &amp; supervisor</span>
+            <span class="font-body-sm text-body-sm text-outline">Sudah check-in (termasuk yang telat)</span>
         </div>
+
+        {{-- Total Tidak Hadir --}}
         <div
             class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between gap-space-xs">
             <div class="flex items-center justify-between">
-                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Aktivitas
-                    Tercatat</span>
+                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Total
+                    Tidak Hadir</span>
                 <span
-                    class="w-8 h-8 rounded-lg bg-surface-container-highest text-on-surface flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[18px]">history_edu</span>
+                    class="w-8 h-8 rounded-lg bg-error-container text-on-error-container flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[18px]">event_busy</span>
                 </span>
             </div>
             <div class="flex items-baseline justify-between pt-1">
-                <span class="font-stat-counter text-stat-counter font-bold text-on-surface">14</span>
+                <span class="font-stat-counter text-stat-counter font-bold {{ ($totalTidakHadir ?? 0) > 0 ? 'text-error' : 'text-on-surface' }}">{{ $totalTidakHadir ?? 0 }}</span>
                 <span
                     class="px-space-xs py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-bold">
-                    Pekan Ini
+                    Hari Kerja
                 </span>
             </div>
-            <span class="font-body-sm text-body-sm text-outline">Sinkron otomatis dengan logbook</span>
+            <span class="font-body-sm text-body-sm text-outline">Hari kerja tanpa catatan absensi</span>
         </div>
     </section>
+
+    {{-- ================= Rekap Riwayat Absensi ================= --}}
+    @php
+        $riwayatAbsensi = $riwayatAbsensi ?? collect();
+
+        $statusMap = [
+            'hadir' => ['label' => 'Hadir', 'class' => 'bg-primary-fixed/40 text-on-primary-fixed-variant', 'icon' => 'check_circle'],
+            'telat' => ['label' => 'Telat', 'class' => 'bg-tertiary-fixed text-on-tertiary-fixed-variant',  'icon' => 'schedule'],
+        ];
+
+        $rekapHadir = $riwayatAbsensi->where('status', 'hadir')->count();
+        $rekapTelat = $riwayatAbsensi->where('status', 'telat')->count();
+        $rekapAll   = $riwayatAbsensi->count();
+    @endphp
+
     <section class="grid grid-cols-1 gap-space-md">
-        <div
-            class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
-            <div class="flex items-center justify-between">
+        <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+
+            {{-- Header --}}
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
                 <div class="flex items-center gap-space-xs">
-                    <span
-                        class="material-symbols-outlined text-primary text-[20px]">confirmation_number</span>
-                    <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Tiket Penugasan
-                        Terbaru</h2>
+                    <span class="material-symbols-outlined text-primary text-[20px]">calendar_month</span>
+                    <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Rekap Riwayat Absensi</h2>
+                    <span class="font-label-sm text-label-sm text-outline">(7 hari terakhir)</span>
                 </div>
                 <a class="font-label-md text-label-md text-primary hover:text-primary-container font-bold flex items-center gap-1 transition-colors"
-                    href="#">
-                    Lihat Semua (20)
+                    href="{{ route('absensi') }}">
+                    Lihat Semua
                     <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
                 </a>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-xs">
-                <div
-                    class="p-space-sm rounded-xl bg-surface-bright hover:bg-surface-container-low transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
-                    <div class="flex items-start gap-space-sm min-w-0">
-                        <div
-                            class="w-9 h-9 rounded-lg bg-surface-container-high text-primary flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-[18px]">build</span>
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                            <div class="flex items-center gap-space-xs flex-wrap">
-                                <span
-                                    class="font-label-sm text-label-sm font-bold text-on-surface font-mono">TKT-00025</span>
-                                <span
-                                    class="px-2 py-0.5 rounded text-xs bg-surface-container font-medium text-on-surface-variant">Maintenance</span>
-                                <span
-                                    class="px-2 py-0.5 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant font-label-sm text-label-sm font-bold">Verified</span>
-                            </div>
-                            <p class="font-body-sm text-body-sm text-on-surface font-medium truncate pt-1">
-                                Menyiapkan material gangguan untuk tim Servpo IKR</p>
-                            <span class="font-label-sm text-label-sm text-outline">Tanggal: 05 Sep 2026 •
-                                09:15 WIB</span>
-                        </div>
-                    </div>
-                    <a class="sm:self-center shrink-0 px-space-xs py-1 rounded bg-surface-container-lowest font-label-sm text-label-sm text-primary font-bold shadow-xs hover:bg-primary hover:text-on-primary transition-all flex items-center gap-1 justify-center"
-                        href="#">
-                        Detail <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-                    </a>
+
+            {{-- Ringkasan --}}
+            <div class="grid grid-cols-3 gap-space-xs">
+                <div class="p-space-xs rounded-lg bg-surface-container-low flex items-center justify-between">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">Tepat Waktu</span>
+                    <span class="font-label-lg text-label-lg font-bold text-primary">{{ $rekapHadir }}</span>
                 </div>
-                <div
-                    class="p-space-sm rounded-xl bg-surface-bright hover:bg-surface-container-low transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
-                    <div class="flex items-start gap-space-sm min-w-0">
-                        <div
-                            class="w-9 h-9 rounded-lg bg-secondary-fixed text-on-secondary-fixed-variant flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-[18px]">hub</span>
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                            <div class="flex items-center gap-space-xs flex-wrap">
-                                <span
-                                    class="font-label-sm text-label-sm font-bold text-on-surface font-mono">TKT-00026</span>
-                                <span
-                                    class="px-2 py-0.5 rounded text-xs bg-surface-container font-medium text-on-surface-variant">Network</span>
-                                <span
-                                    class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-bold">On
-                                    Progress</span>
-                            </div>
-                            <p class="font-body-sm text-body-sm text-on-surface font-medium truncate pt-1">
-                                Pengecekan terminasi Optical Distribution Cabinet (ODC)</p>
-                            <span class="font-label-sm text-label-sm text-outline">Tanggal: 04 Sep 2026 •
-                                13:45 WIB</span>
-                        </div>
-                    </div>
-                    <a class="sm:self-center shrink-0 px-space-xs py-1 rounded bg-surface-container-lowest font-label-sm text-label-sm text-primary font-bold shadow-xs hover:bg-primary hover:text-on-primary transition-all flex items-center gap-1 justify-center"
-                        href="#">
-                        Detail <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-                    </a>
+                <div class="p-space-xs rounded-lg bg-surface-container-low flex items-center justify-between">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">Telat</span>
+                    <span class="font-label-lg text-label-lg font-bold {{ $rekapTelat > 0 ? 'text-tertiary' : 'text-on-surface' }}">{{ $rekapTelat }}</span>
                 </div>
-                <div
-                    class="p-space-sm rounded-xl bg-error-container/20 hover:bg-error-container/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
-                    <div class="flex items-start gap-space-sm min-w-0">
-                        <div
-                            class="w-9 h-9 rounded-lg bg-error-container text-on-error-container flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-[18px]">warning</span>
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                            <div class="flex items-center gap-space-xs flex-wrap">
-                                <span
-                                    class="font-label-sm text-label-sm font-bold text-on-surface font-mono">TKT-00027</span>
-                                <span
-                                    class="px-2 py-0.5 rounded text-xs bg-surface-container font-medium text-on-surface-variant">Installation</span>
-                                <span
-                                    class="px-2 py-0.5 rounded-full bg-error text-on-error font-label-sm text-label-sm font-bold">Revision</span>
-                            </div>
-                            <p class="font-body-sm text-body-sm text-on-surface font-medium truncate pt-1">
-                                Dokumentasi perapian kabel Drop Core Pelanggan</p>
-                            <span
-                                class="font-label-sm text-label-sm text-error font-semibold flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[14px]">info</span>
-                                Catatan Mentor: Lampiran foto buram, unggah ulang foto label OTB
-                            </span>
-                        </div>
-                    </div>
-                    <a class="sm:self-center shrink-0 px-space-sm py-1 rounded bg-error text-on-error font-label-sm text-label-sm font-bold shadow-xs hover:bg-on-error-container transition-all flex items-center gap-1 justify-center"
-                        href="#">
-                        Perbaiki <span class="material-symbols-outlined text-[14px]">edit</span>
-                    </a>
+                <div class="p-space-xs rounded-lg bg-surface-container-low flex items-center justify-between">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">Total Tercatat</span>
+                    <span class="font-label-lg text-label-lg font-bold text-on-surface">{{ $rekapAll }}</span>
                 </div>
-                <div
-                    class="p-space-sm rounded-xl bg-surface-bright hover:bg-surface-container-low transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
-                    <div class="flex items-start gap-space-sm min-w-0">
-                        <div
-                            class="w-9 h-9 rounded-lg bg-surface-container-high text-primary flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-[18px]">settings_ethernet</span>
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                            <div class="flex items-center gap-space-xs flex-wrap">
-                                <span
-                                    class="font-label-sm text-label-sm font-bold text-on-surface font-mono">TKT-00024</span>
-                                <span
-                                    class="px-2 py-0.5 rounded text-xs bg-surface-container font-medium text-on-surface-variant">Maintenance</span>
-                                <span
-                                    class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">Done</span>
-                            </div>
-                            <p class="font-body-sm text-body-sm text-on-surface font-medium truncate pt-1">
-                                Pengukuran redaman kabel fiber optik OTB Segmen Barat</p>
-                            <span class="font-label-sm text-label-sm text-outline">Tanggal: 03 Sep 2026 •
-                                15:20 WIB</span>
-                        </div>
-                    </div>
-                    <a class="sm:self-center shrink-0 px-space-xs py-1 rounded bg-surface-container-lowest font-label-sm text-label-sm text-primary font-bold shadow-xs hover:bg-primary hover:text-on-primary transition-all flex items-center gap-1 justify-center"
-                        href="#">
-                        Detail <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-                    </a>
-                </div>
+            </div>
+
+            {{-- Tabel --}}
+            <div class="overflow-x-auto rounded-xl">
+                <table class="w-full text-left border-collapse min-w-[640px]">
+                    <thead>
+                        <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+                            <th class="px-space-sm py-space-xs font-bold">Tanggal</th>
+                            <th class="px-space-sm py-space-xs font-bold">Check-in</th>
+                            <th class="px-space-sm py-space-xs font-bold">Check-out</th>
+                            <th class="px-space-sm py-space-xs font-bold">Durasi</th>
+                            <th class="px-space-sm py-space-xs font-bold">Jarak dari Kantor</th>
+                            <th class="px-space-sm py-space-xs font-bold">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="font-body-sm text-body-sm text-on-surface">
+                        @forelse ($riwayatAbsensi as $absen)
+                            @php
+                                $status  = $statusMap[$absen->status] ?? ['label' => ucfirst($absen->status), 'class' => 'bg-surface-container text-on-surface-variant', 'icon' => 'help'];
+                                $tanggal = \Illuminate\Support\Carbon::parse($absen->attendance_date);
+                                $in      = $absen->check_in  ? \Illuminate\Support\Carbon::parse($absen->check_in)  : null;
+                                $out     = $absen->check_out ? \Illuminate\Support\Carbon::parse($absen->check_out) : null;
+                                $durasi  = ($in && $out) ? $in->diff($out)->format('%hj %im') : '-';
+                            @endphp
+                            <tr class="border-b border-surface-container hover:bg-surface-container-low transition-colors">
+                                <td class="px-space-sm py-space-xs">
+                                    <div class="flex flex-col">
+                                        <span class="font-semibold">{{ $tanggal->translatedFormat('d M Y') }}</span>
+                                        <span class="font-label-sm text-label-sm text-outline">{{ $tanggal->translatedFormat('l') }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-space-sm py-space-xs font-mono">{{ $in ? $in->format('H:i') . ' WIB' : '-' }}</td>
+                                <td class="px-space-sm py-space-xs font-mono">{{ $out ? $out->format('H:i') . ' WIB' : 'Belum check-out' }}</td>
+                                <td class="px-space-sm py-space-xs">{{ $durasi }}</td>
+                                <td class="px-space-sm py-space-xs">
+                                    <span class="flex items-center gap-1 text-on-surface-variant">
+                                        <span class="material-symbols-outlined text-[14px]">near_me</span>
+                                        {{ !is_null($absen->check_in_distance) ? number_format($absen->check_in_distance, 0) . ' m' : '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-space-sm py-space-xs">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold {{ $status['class'] }}">
+                                        <span class="material-symbols-outlined text-[14px]">{{ $status['icon'] }}</span>
+                                        {{ $status['label'] }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-space-sm py-space-lg text-center text-outline">
+                                    Belum ada riwayat absensi.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </section>
