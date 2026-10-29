@@ -156,6 +156,51 @@ Route::middleware('auth')->group(function () {
 
         $mulai   = $user->periode_mulai?->translatedFormat('d M Y');
         $selesai = $user->periode_selesai?->translatedFormat('d M Y');
+        $riwayatAbsensi = \App\Models\Attendance::where('user_id', $user->id)
+            ->orderByDesc('attendance_date')
+            ->limit(7)
+            ->get();
+
+        // Total tiket milik user
+$totalTiket   = \Illuminate\Support\Facades\DB::table('tickets')
+    ->where('user_id', $user->id)->count();
+$tiketSelesai = \Illuminate\Support\Facades\DB::table('tickets')
+    ->where('user_id', $user->id)
+    ->whereIn('status', ['done', 'verified'])->count();
+
+// Total absen hadir (tepat waktu + telat)
+$totalHadir = \App\Models\Attendance::where('user_id', $user->id)
+    ->whereNotNull('check_in')->count();
+$totalTelat = \App\Models\Attendance::where('user_id', $user->id)
+    ->where('status', 'telat')->count();
+
+// Total tidak hadir = hari kerja (Senin-Jumat) sejak periode mulai sampai kemarin,
+// dikurangi hari yang ada absennya
+$totalTidakHadir = 0;
+if ($user->periode_mulai) {
+    $awal  = $user->periode_mulai->copy()->startOfDay();
+    $akhir = today()->subDay();
+
+    if ($user->periode_selesai && $user->periode_selesai->lt($akhir)) {
+        $akhir = $user->periode_selesai->copy()->startOfDay();
+    }
+
+    if ($awal->lte($akhir)) {
+        $hariKerja = 0;
+        for ($d = $awal->copy(); $d->lte($akhir); $d->addDay()) {
+            if ($d->isWeekday()) {
+                $hariKerja++;
+            }
+        }
+
+        $hadirDalamRentang = \App\Models\Attendance::where('user_id', $user->id)
+            ->whereNotNull('check_in')
+            ->whereBetween('attendance_date', [$awal->toDateString(), $akhir->toDateString()])
+            ->count();
+
+        $totalTidakHadir = max($hariKerja - $hadirDalamRentang, 0);
+    }
+}
 
         return view('user.dashboard', [
             'userName'      => $user->name,
@@ -164,6 +209,12 @@ Route::middleware('auth')->group(function () {
             'divisi'        => $user->group?->name ?? '-',
             'pembimbing'    => $user->mentor ?? '-',
             'kampus'        => $user->asal_universitas ?? '-',
+            'riwayatAbsensi' => $riwayatAbsensi,
+            'totalTiket'      => $totalTiket,
+            'tiketSelesai'    => $tiketSelesai,
+            'totalHadir'      => $totalHadir,
+            'totalTelat'      => $totalTelat,
+            'totalTidakHadir' => $totalTidakHadir,
         ]);
     })->name('dashboard');
 
