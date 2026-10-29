@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DaftarUserController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\RiwayatAbsensiController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\User\TicketController;
 use Illuminate\Http\Request;
@@ -30,6 +31,10 @@ Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/riwayat-absensi', [RiwayatAbsensiController::class, 'index'])->name('riwayat-absensi');
+
+
 
     Route::get('/daily-activity', [DailyActivityController::class, 'index'])->name('daily-activity.index');
     Route::get('/daily-activity/{user}', [DailyActivityController::class, 'show'])->name('daily-activity.show');

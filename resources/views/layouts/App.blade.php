@@ -415,7 +415,7 @@
         $adminMenu = [
             ['admin.dashboard', 'Dashboard', 'grid_view'],
             ['admin.daftar-user', 'User', 'group'],
-            ['admin.absensi', 'Absensi', 'co_present'],
+            ['admin.riwayat-absensi', 'Riwayat Absensi', 'co_present'],
             ['admin.tickets', 'Ticket', 'confirmation_number'],
             ['admin.daily-activity.index', 'Daily Activity', 'event_note'],
             ['admin.laporan', 'Laporan', 'assessment'],
@@ -491,17 +491,6 @@
 
                             <span>Dashboard</span>
                         </div>
-                    </a>
-                    <a class="{{ $navBase }} {{ request()->routeIs('absensi') ? $navActive : $navIdle }}"
-                        href="{{ route('absensi') }}" @if (request()->routeIs('absensi')) aria-current="page" @endif>
-
-                        <div class="flex items-center gap-space-sm">
-                            <span class="material-symbols-outlined text-[20px]">
-                                schedule
-                            </span>
-                            <span>Absensi</span>
-                        </div>
-                        <span class="w-2 h-2 rounded-full bg-primary"></span>
                     </a>
                     <div class="flex flex-col gap-space-2xs">
                         <button type="button" data-toggle="submenu" aria-controls="submenuTicket"
