@@ -15,6 +15,7 @@
         .leaflet-control-attribution { font-size: 9px !important; }
         button:disabled { opacity: .55; cursor: not-allowed; }
 
+        /* ===== Indikator langkah ===== */
         .wizard-steps { display: flex; align-items: flex-start; }
         .step-item { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 92px; }
         .step-dot { width: 36px; height: 36px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; background: #e3e6ea; color: #6b7280; transition: all .35s ease; }
@@ -29,10 +30,12 @@
         .step-panel { animation: panel-in .35s ease both; }
         @keyframes panel-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
+        /* ===== Kamera ===== */
         .shutter-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
         .shutter-flash.go { animation: shutter .4s ease-out; }
         @keyframes shutter { 0% { opacity: .9; } 100% { opacity: 0; } }
 
+        /* ===== Animasi hasil presensi ===== */
         .result-card { position: relative; overflow: hidden; animation: result-card-in .4s cubic-bezier(.2, .9, .3, 1.15) both; }
         .result-icon { position: relative; width: 96px; height: 96px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--accent, #006857); }
         .result-svg { width: 96px; height: 96px; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; animation: result-pop .55s cubic-bezier(.34, 1.56, .64, 1) both; }
@@ -106,7 +109,11 @@
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-space-xl items-start">
+
+            {{-- ================= KOLOM KIRI ================= --}}
             <div class="xl:col-span-7 flex flex-col gap-space-xl">
+
+                {{-- ---------- Kartu status presensi ---------- --}}
                 <div class="relative overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm p-space-xl">
                     <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-primary/5 blur-3xl pointer-events-none"></div>
 
@@ -193,6 +200,7 @@
                     </div>
                 </div>
 
+                {{-- ================= WIZARD 3 LANGKAH ================= --}}
                 @unless ($checkedOut)
                     <div id="wizard" class="rounded-xl bg-surface-container-lowest shadow-sm p-space-xl flex flex-col gap-space-lg">
 
@@ -201,6 +209,7 @@
                             <span class="font-headline-sm text-headline-sm text-on-surface">{{ $actionLabel }} Absensi</span>
                         </div>
 
+                        {{-- Indikator langkah --}}
                         <div class="wizard-steps">
                             <div class="step-item">
                                 <div class="step-dot active" id="dot-1">1</div>
@@ -218,6 +227,7 @@
                             </div>
                         </div>
 
+                        {{-- ========== LANGKAH 1: VERIFIKASI LOKASI ========== --}}
                         <div class="step-panel flex flex-col gap-space-lg" id="panel-1">
                             <div class="flex items-center justify-between flex-wrap gap-space-sm">
                                 <div class="flex items-center gap-space-xs">
@@ -301,6 +311,7 @@
                             </button>
                         </div>
 
+                        {{-- ========== LANGKAH 2: AMBIL SWAFOTO ========== --}}
                         <div class="step-panel flex flex-col gap-space-lg" id="panel-2" style="display:none;">
                             <div class="flex items-center gap-space-xs">
                                 <span class="material-symbols-outlined text-primary text-[22px]">photo_camera_front</span>
@@ -366,6 +377,7 @@
                             </div>
                         </div>
 
+                        {{-- ========== LANGKAH 3: KONFIRMASI ========== --}}
                         <div class="step-panel flex flex-col gap-space-lg" id="panel-3" style="display:none;">
                             <div class="flex items-center gap-space-xs">
                                 <span class="material-symbols-outlined text-primary text-[22px]">fact_check</span>
@@ -432,6 +444,7 @@
                     </div>
                 @endunless
             </div>
+
             <div class="xl:col-span-5 flex flex-col gap-space-xl">
 
                 <div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-xl flex flex-col gap-space-md">
@@ -523,13 +536,13 @@
             const OFFICE = @json($office);
             const MAX_ACCURACY = @json($maxAccuracy);
             const LATE_AFTER = @json($lateAfter->format('H:i:s'));
-            const MODE = '{{ $checkedIn ? 'out' : 'in' }}'; // 'in' = check-in, 'out' = check-out
+            const MODE = '{{ $checkedIn ? 'out' : 'in' }}'; 
             const URLS = {
                 in: @json(route('absensi.check-in')),
                 out: @json(route('absensi.check-out')),
             };
             const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
-            const POSITION_MAX_AGE = 5 * 60 * 1000; // lokasi dianggap kedaluwarsa setelah 5 menit
+            const POSITION_MAX_AGE = 5 * 60 * 1000; 
             const $ = (id) => document.getElementById(id);
             function tick() {
                 const now = new Date();
@@ -554,6 +567,10 @@
             }
             setInterval(tick, 1000);
             tick();
+
+            // =====================================================
+            // Modal hasil beranimasi
+            // =====================================================
             const resultModal = $('result-modal');
             const resultCard = $('result-card');
             const resultIcon = $('result-icon');
@@ -593,6 +610,7 @@
                 }
             }
 
+            // type: 'success' | 'warning' | 'error'
             function showResult({ type = 'success', title, message = '', details = [], buttonText = 'Selesai', onClose = null }) {
                 const accent = { success: '#006857', warning: '#d97706', error: '#ba1a1a' }[type];
                 resultCard.style.setProperty('--accent', accent);
@@ -643,9 +661,7 @@
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && resultModal.style.display === 'flex') closeResult();
             });
-
             if (!$('wizard')) return;
-
             let step = 1;
             let position = null; 
             let locationValid = false;
@@ -699,7 +715,6 @@
 
                 $('wizard').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-
             function setGps(state, badge, subtitle) {
                 const colors = {
                     idle: 'bg-surface-container-high text-on-surface-variant',
@@ -890,6 +905,7 @@
                 btnTo3.style.display = 'none';
             }
 
+            // Tampilan: foto sudah diambil
             function showCaptured() {
                 capturedImg.src = photoData;
                 capturedImg.style.display = 'block';
@@ -936,6 +952,7 @@
                 video.srcObject = null;
             }
 
+            // Ambil tepat area yang terlihat di preview (rasio 4:3)
             function capturePhoto() {
                 if (!video.videoWidth) return null;
                 const W = 640, H = 480, target = W / H;
@@ -988,6 +1005,9 @@
             btnTo3.addEventListener('click', () => goToStep(3));
             $('btn-back-1').addEventListener('click', () => goToStep(1));
 
+            // =====================================================
+            // LANGKAH 3: Konfirmasi + kirim
+            // =====================================================
             function fillConfirm() {
                 $('confirm-photo').src = photoData;
                 $('confirm-type').textContent = MODE === 'in' ? 'Check-in' : 'Check-out';

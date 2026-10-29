@@ -422,7 +422,7 @@
         $adminMenu = [
             ['admin.dashboard', 'Dashboard', 'grid_view'],
             ['admin.daftar-user', 'User', 'group'],
-            ['admin.absensi', 'Absensi', 'co_present'],
+            ['admin.riwayat-absensi', 'Riwayat Absensi', 'co_present'],
             ['admin.tickets', 'Ticket', 'confirmation_number'],
             ['admin.daily-activity.index', 'Daily Activity', 'event_note'],
             ['admin.laporan', 'Laporan', 'assessment'],

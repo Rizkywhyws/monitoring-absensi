@@ -60,6 +60,7 @@
 
     <div class="flex flex-col gap-space-xl">
 
+        {{-- ================= HEADER + FILTER ================= --}}
         <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-space-md">
             <div>
                 <h1 class="font-headline-md text-headline-md text-on-surface">Riwayat Absensi</h1>
@@ -98,6 +99,7 @@
             </form>
         </div>
 
+        {{-- ================= RINGKASAN ================= --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
             <div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-lg flex items-center gap-space-md">
                 <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -144,6 +146,8 @@
                 </div>
             </div>
         </div>
+
+        {{-- ================= TABEL RIWAYAT ================= --}}
         <div class="rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden">
             <div class="flex items-center justify-between gap-space-sm p-space-lg">
                 <div class="flex items-center gap-space-xs">
@@ -278,6 +282,7 @@
         </div>
     </div>
 
+    {{-- ================= MODAL DETAIL ================= --}}
     <div id="detail-modal"
         style="display:none; position:fixed; inset:0; z-index:60; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,.45); backdrop-filter:blur(4px);"
         role="dialog" aria-modal="true">
@@ -400,6 +405,7 @@
 
             function closeDetail() {
                 modal.style.display = 'none';
+                // hentikan pemuatan foto saat modal ditutup
                 ['in', 'out'].forEach((k) => $(`d-${k}-photo`).removeAttribute('src'));
             }
 

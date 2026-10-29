@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\AttendanceSetting;
-use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -17,6 +17,12 @@ class AttendanceController extends Controller
     private const LATE_AFTER = '08:15:00';
     private const MAX_ACCURACY_METERS = 100;
     private const MAX_PHOTO_BYTES = 2097152;
+
+    private const MONTHS = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+    ];
 
     public function index(Request $request)
     {
@@ -35,7 +41,7 @@ class AttendanceController extends Controller
             ->explode(' ')
             ->filter()
             ->take(2)
-            ->map(fn($part) => Str::upper(Str::substr($part, 0, 1)))
+            ->map(fn ($part) => Str::upper(Str::substr($part, 0, 1)))
             ->implode('');
 
         $setting = AttendanceSetting::where('status', 'active')->first();
@@ -59,75 +65,60 @@ class AttendanceController extends Controller
 
     public function riwayat(Request $request)
     {
-        $months = [
-            1 => 'Januari',
-            2 => 'Februari',
-            3 => 'Maret',
-            4 => 'April',
-            5 => 'Mei',
-            6 => 'Juni',
-            7 => 'Juli',
-            8 => 'Agustus',
-            9 => 'September',
-            10 => 'Oktober',
-            11 => 'November',
-            12 => 'Desember',
-        ];
+        $user = $request->user();
 
-        $month = (int) $request->query('bulan', now()->month);
-        if (! isset($months[$month])) {
-            $month = now()->month;
-        }
+        $filters = $request->validate([
+            'bulan'  => ['nullable', 'integer', 'between:1,12'],
+            'tahun'  => ['nullable', 'integer', 'between:2020,2100'],
+            'status' => ['nullable', 'in:hadir,telat'],
+        ]);
 
-        $year = (int) $request->query('tahun', now()->year);
-        if ($year < 2000 || $year > 2100) {
-            $year = now()->year;
-        }
+        $month  = (int) ($filters['bulan'] ?? now()->month);
+        $year   = (int) ($filters['tahun'] ?? now()->year);
+        $status = $filters['status'] ?? null;
 
-        $status = $request->query('status');
-        if (! in_array($status, ['hadir', 'telat'], true)) {
-            $status = null;
-        }
+        $start = Carbon::create($year, $month, 1)->startOfMonth();
+        $end   = $start->copy()->endOfMonth();
 
-        $userId = $request->user()->id;
-        $start  = Carbon::create($year, $month, 1)->startOfMonth();
-        $end    = $start->copy()->endOfMonth();
-
-        $monthQuery = Attendance::where('user_id', $userId)
+        $monthQuery = Attendance::where('user_id', $user->id)
             ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()]);
 
-        $monthRows = (clone $monthQuery)->get(['status', 'check_in', 'check_out']);
+        // Ringkasan bulan terpilih (tidak terpengaruh filter status)
+        $monthRecords = (clone $monthQuery)->get(['id', 'check_in', 'check_out', 'status']);
 
-        $durations = $monthRows
-            ->filter(fn($r) => $r->check_in && $r->check_out)
-            ->map(fn($r) => intdiv($r->check_out->getTimestamp() - $r->check_in->getTimestamp(), 60));
+        $completed = $monthRecords->filter(fn ($a) => $a->check_in && $a->check_out);
+        $avgMinutes = $completed->isNotEmpty()
+            ? (int) round($completed->avg(
+                fn ($a) => ($a->check_out->getTimestamp() - $a->check_in->getTimestamp()) / 60
+            ))
+            : null;
 
         $summary = [
-            'total'       => $monthRows->count(),
-            'hadir'       => $monthRows->where('status', 'hadir')->count(),
-            'telat'       => $monthRows->where('status', 'telat')->count(),
-            'avg_minutes' => $durations->isNotEmpty() ? (int) round($durations->avg()) : null,
+            'total'       => $monthRecords->count(),
+            'hadir'       => $monthRecords->where('status', 'hadir')->count(),
+            'telat'       => $monthRecords->where('status', 'telat')->count(),
+            'avg_minutes' => $avgMinutes,
         ];
 
         $attendances = (clone $monthQuery)
-            ->when($status, fn($q) => $q->where('status', $status))
+            ->when($status, fn ($q) => $q->where('status', $status))
             ->orderByDesc('attendance_date')
             ->paginate(10)
             ->withQueryString();
 
-        $earliest  = Attendance::where('user_id', $userId)->min('attendance_date');
-        $firstYear = $earliest ? Carbon::parse($earliest)->year : now()->year;
-        $years     = range(now()->year, min($firstYear, now()->year));
+        $firstDate = Attendance::where('user_id', $user->id)->min('attendance_date');
+        $minYear   = $firstDate ? (int) Carbon::parse($firstDate)->year : now()->year;
+        $years     = range(now()->year, min($minYear, now()->year));
 
-        return view('user.riwayatAbsensi', compact(
-            'attendances',
-            'months',
-            'month',
-            'year',
-            'years',
-            'status',
-            'summary'
-        ));
+        return view('user.riwayatAbsensi', [
+            'attendances' => $attendances,
+            'summary'     => $summary,
+            'month'       => $month,
+            'year'        => $year,
+            'status'      => $status,
+            'years'       => $years,
+            'months'      => self::MONTHS,
+        ]);
     }
 
     public function checkIn(Request $request): JsonResponse
