@@ -74,6 +74,7 @@ class DailyActivitySeeder extends Seeder
         DB::table('daily_activities')->whereIn('user_id', $oldIds)->delete();
         DB::table('tickets')->whereIn('user_id', $oldIds)->delete();
         DB::table('users')->whereIn('id', $oldIds)->delete();
+        DB::table('tickets')->where('ticket_number', 'like', 'DMY-%')->delete();
 
         // 2. Mahasiswa dummy
         $students = [
@@ -188,6 +189,47 @@ class DailyActivitySeeder extends Seeder
                     'created_at'    => $now,
                     'updated_at'    => $now,
                 ]);
+            }
+        }
+
+        // 6. Tiket contoh untuk AKUN PESERTA ASLI (non-dummy), supaya Anda bisa login sendiri.
+        //    Kode tiketnya diawali DMY-. Logbook sengaja tidak dibuat: isi sendiri lewat halaman Daily Activity peserta.
+        $realUsers = DB::table('users')
+            ->where(fn ($q) => $q->where('role', '!=', 'admin')->orWhereNull('role'))
+            ->where('email', 'not like', '%@dummy.test')
+            ->pluck('id');
+
+        $demoItems   = array_values($catalog['PM OSP']);
+        $demoCounter = 1;
+
+        foreach ($realUsers as $uid) {
+            foreach (range(0, 4) as $daysAgo) {
+                $slot  = $now->copy()->subDays($daysAgo)->startOfDay()->setTime(8, 10);
+                $total = ($daysAgo % 3) + 1; // 1-3 tiket per hari
+
+                for ($k = 0; $k < $total; $k++) {
+                    [$title, $priority] = $demoItems[($daysAgo + $k) % count($demoItems)];
+
+                    $started   = $slot->copy();
+                    $completed = $slot->copy()->addMinutes(75 + ($k * 20));
+                    $slot      = $completed->copy()->addMinutes(15);
+                    $number    = sprintf('DMY-%05d', $demoCounter++);
+
+                    $this->insertRow('tickets', [
+                        'ticket_number' => $number,
+                        'code'          => $number,
+                        'user_id'       => $uid,
+                        'title'         => $title,
+                        'description'   => $title,
+                        'category'      => $category,
+                        'priority'      => $priority,
+                        'status'        => $statusDone,
+                        'started_at'    => $started,
+                        'completed_at'  => $completed,
+                        'created_at'    => $started,
+                        'updated_at'    => $completed,
+                    ]);
+                }
             }
         }
     }

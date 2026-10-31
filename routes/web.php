@@ -228,4 +228,6 @@ if ($user->periode_mulai) {
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('ticket.show')->whereNumber('ticket');
     Route::post('/tickets', [TicketController::class, 'store'])->name('ticket.store');
     Route::put('/tickets/{ticket}', [TicketController::class, 'update'])->name('ticket.update');
+    Route::get('/daily-activity', [\App\Http\Controllers\User\DailyActivityController::class, 'index'])->name('daily-activity.index');
+    Route::post('/daily-activity', [\App\Http\Controllers\User\DailyActivityController::class, 'store'])->name('daily-activity.store');
 });

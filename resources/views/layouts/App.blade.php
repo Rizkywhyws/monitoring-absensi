@@ -524,7 +524,9 @@
                             </a>
                         </div>
                     </div>
-                    <a class="{{ $navBase }} {{ $navIdle }}" href="#">
+                    <a class="{{ $navBase }} {{ request()->routeIs('daily-activity.*') ? $navActive : $navIdle }}"
+                        href="{{ route('daily-activity.index') }}"
+                        @if (request()->routeIs('daily-activity.*')) aria-current="page" @endif>
                         <div class="flex items-center gap-space-sm">
                             <span class="material-symbols-outlined text-[20px]">
                                 assignment
