@@ -414,6 +414,14 @@
         $ticketGroupOpen = request()->routeIs('tickets', 'ticket.*');
         $absensiGroupOpen = request()->routeIs('absensi', 'absensi.*');
 
+        // Dropdown Absensi (admin): Riwayat Absensi + Izin & Sakit
+        $adminAbsensiOpen = request()->routeIs('admin.riwayat-absensi*', 'admin.izin*');
+
+        // Jumlah pengajuan izin/sakit yang menunggu persetujuan (badge, hanya admin)
+        $pendingLeaves = $isAdmin
+            ? \App\Models\LeaveRequest::where('status', 'pending')->count()
+            : 0;
+
         // Link "Riwayat Absensi" jatuh ke '#' selama route absensi.riwayat belum dibuat
         $riwayatAbsensiUrl = \Illuminate\Support\Facades\Route::has('absensi.riwayat')
             ? route('absensi.riwayat')
@@ -422,7 +430,7 @@
         $adminMenu = [
             ['admin.dashboard', 'Dashboard', 'grid_view'],
             ['admin.daftar-user', 'User', 'group'],
-            ['admin.riwayat-absensi', 'Riwayat Absensi', 'co_present'],
+            ['admin.riwayat-absensi', 'Absensi', 'co_present'],
             ['admin.tickets', 'Ticket', 'confirmation_number'],
             ['admin.daily-activity.index', 'Daily Activity', 'event_note'],
             ['admin.laporan', 'Laporan', 'assessment'],
@@ -465,6 +473,55 @@
             <nav class="flex flex-col gap-space-xs px-space-xs">
                 @if ($isAdmin)
                     @foreach ($adminMenu as $m)
+                        {{-- Absensi (dropdown admin: Riwayat Absensi & Izin/Sakit) --}}
+                        @if ($m[0] === 'admin.riwayat-absensi')
+                            <div class="flex flex-col gap-space-2xs">
+                                <button type="button" data-toggle="submenu" aria-controls="submenuAdminAbsensi"
+                                    aria-expanded="{{ $adminAbsensiOpen ? 'true' : 'false' }}"
+                                    class="w-full {{ $navBase }} {{ $adminAbsensiOpen ? 'text-on-surface font-semibold' : $navIdle }}">
+                                    <div class="flex items-center gap-space-sm">
+                                        <span class="material-symbols-outlined text-[20px]">{{ $m[2] }}</span>
+                                        <span>{{ $m[1] }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-space-xs">
+                                        @if ($pendingLeaves > 0)
+                                            <span
+                                                class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
+                                                {{ $pendingLeaves }}
+                                            </span>
+                                        @endif
+                                        <span data-chevron
+                                            class="material-symbols-outlined text-[18px] transition-transform duration-150 {{ $adminAbsensiOpen ? 'rotate-180' : '' }}">
+                                            expand_more
+                                        </span>
+                                    </div>
+                                </button>
+
+                                <div id="submenuAdminAbsensi"
+                                    class="pl-space-md flex flex-col gap-space-2xs {{ $adminAbsensiOpen ? '' : 'hidden' }}">
+
+                                    <a href="{{ route('admin.riwayat-absensi') }}"
+                                        class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('admin.riwayat-absensi*') ? $navActive : $navIdle }}"
+                                        @if (request()->routeIs('admin.riwayat-absensi*')) aria-current="page" @endif>
+                                        Riwayat Absensi
+                                    </a>
+
+                                    <a href="{{ route('admin.izin') }}"
+                                        class="flex items-center justify-between px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('admin.izin*') ? $navActive : $navIdle }}"
+                                        @if (request()->routeIs('admin.izin*')) aria-current="page" @endif>
+                                        <span>Izin &amp; Sakit</span>
+                                        @if ($pendingLeaves > 0)
+                                            <span
+                                                class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
+                                                {{ $pendingLeaves }}
+                                            </span>
+                                        @endif
+                                    </a>
+                                </div>
+                            </div>
+                            @continue
+                        @endif
+
                         @php
                             $active = request()->routeIs(\Illuminate\Support\Str::beforeLast($m[0], '.index') . '*');
                             $href = \Illuminate\Support\Facades\Route::has($m[0]) ? route($m[0]) : '#';

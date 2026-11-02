@@ -69,18 +69,27 @@
 
 @section('content')
     @php
-        $checkedIn = (bool) $todayAttendance;
+        // Hari ini tercatat izin/sakit (pengajuan sudah disetujui admin)
+        $onLeave = $todayAttendance && in_array($todayAttendance->status, ['sakit', 'izin'], true);
+        $leaveLabel = $onLeave ? ($todayAttendance->status === 'sakit' ? 'Sakit' : 'Izin') : null;
+        $pendingLeave = $pendingLeave ?? null;
+
+        $checkedIn = $todayAttendance && ! $onLeave;
         $checkedOut = $checkedIn && $todayAttendance->check_out;
         $isLate = $checkedIn && $todayAttendance->status === 'telat';
         $actionLabel = $checkedIn ? 'Check-out' : 'Check-in';
     @endphp
 
     <div class="flex flex-col gap-space-xl">
+
+        {{-- ================= HEADER ================= --}}
         <div class="flex flex-col gap-space-md">
             <div>
                 <h1 class="font-headline-md text-headline-md text-on-surface">Absensi Hari Ini</h1>
                 <p class="font-body-md text-body-md text-on-surface-variant">
-                    @if ($checkedOut)
+                    @if ($onLeave)
+                        Hari ini Anda tercatat {{ strtolower($leaveLabel) }} (pengajuan telah disetujui admin).
+                    @elseif ($checkedOut)
                         Kehadiran Anda hari ini sudah lengkap (check-in &amp; check-out).
                     @elseif ($checkedIn)
                         Anda sudah check-in. Lakukan check-out saat pekerjaan selesai.
@@ -108,6 +117,36 @@
             </div>
         </div>
 
+        @if ($onLeave)
+            <div class="flex items-start gap-space-sm p-space-lg rounded-xl bg-secondary-fixed text-on-secondary-fixed-variant">
+                <span class="material-symbols-outlined text-[28px]">event_available</span>
+                <div class="flex flex-col gap-1">
+                    <span class="font-headline-sm text-headline-sm">{{ $leaveLabel }} disetujui</span>
+                    <span class="font-body-md text-body-md">
+                        Hari ini tercatat sebagai {{ strtolower($leaveLabel) }}, jadi tidak perlu check-in maupun check-out.
+                        Semoga urusan Anda lancar.
+                    </span>
+                </div>
+            </div>
+        @elseif (! $checkedIn && $pendingLeave)
+            <div class="flex items-start gap-space-sm p-space-lg rounded-xl bg-tertiary-fixed text-on-tertiary-fixed">
+                <span class="material-symbols-outlined text-[28px]">hourglass_top</span>
+                <div class="flex flex-col gap-1">
+                    <span class="font-headline-sm text-headline-sm">Pengajuan {{ strtolower($pendingLeave->typeLabel()) }} menunggu persetujuan</span>
+                    <span class="font-body-md text-body-md">
+                        Jika Anda tetap masuk dan melakukan check-in hari ini, pengajuan tersebut akan dibatalkan otomatis.
+                    </span>
+                    <a href="{{ route('izin') }}" class="self-start font-label-lg text-label-lg underline">Lihat pengajuan</a>
+                </div>
+            </div>
+        @elseif (! $checkedIn)
+            <a href="{{ route('izin') }}"
+                class="self-start inline-flex items-center gap-1.5 px-space-md py-2 rounded-xl bg-surface-container-low text-primary font-label-md text-label-md hover:bg-surface-container-high transition-colors">
+                <span class="material-symbols-outlined text-[18px]">sick</span>
+                Tidak bisa masuk? Ajukan izin / sakit
+            </a>
+        @endif
+
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-space-xl items-start">
 
             {{-- ================= KOLOM KIRI ================= --}}
@@ -124,7 +163,12 @@
                                 <span class="font-headline-sm text-headline-sm text-on-surface">Status Presensi Harian</span>
                             </div>
 
-                            @if ($checkedOut)
+                            @if ($onLeave)
+                                <div class="flex items-center gap-2 px-space-md py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant">
+                                    <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                    <span class="font-label-md text-label-md">{{ $leaveLabel }}</span>
+                                </div>
+                            @elseif ($checkedOut)
                                 <div class="flex items-center gap-2 px-space-md py-1 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant">
                                     <span class="w-2 h-2 rounded-full bg-primary"></span>
                                     <span class="font-label-md text-label-md">Selesai</span>
@@ -153,7 +197,12 @@
                                 </div>
                             </div>
 
-                            @if (!$checkedIn)
+                            @if ($onLeave)
+                                <div class="flex flex-col gap-1 items-end self-stretch justify-center md:pl-space-lg md:border-l md:border-surface-variant/40">
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Status Hari Ini</span>
+                                    <span class="font-headline-sm text-headline-sm text-primary">{{ $leaveLabel }} disetujui</span>
+                                </div>
+                            @elseif (!$checkedIn)
                                 <div class="flex flex-col gap-1 items-end self-stretch justify-center md:pl-space-lg md:border-l md:border-surface-variant/40">
                                     <span class="font-label-sm text-label-sm text-on-surface-variant">Tenggat Check-in Tepat Waktu</span>
                                     <span class="font-headline-sm text-headline-sm text-primary">{{ $lateAfter->format('H:i:s') }} WIB</span>
@@ -201,7 +250,7 @@
                 </div>
 
                 {{-- ================= WIZARD 3 LANGKAH ================= --}}
-                @unless ($checkedOut)
+                @unless ($checkedOut || $onLeave)
                     <div id="wizard" class="rounded-xl bg-surface-container-lowest shadow-sm p-space-xl flex flex-col gap-space-lg">
 
                         <div class="flex items-center gap-space-xs">
@@ -445,6 +494,7 @@
                 @endunless
             </div>
 
+
             <div class="xl:col-span-5 flex flex-col gap-space-xl">
 
                 <div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-xl flex flex-col gap-space-md">
@@ -478,8 +528,10 @@
                                         </span>
                                         @if ($row->status === 'hadir')
                                             <span class="px-2 py-0.5 rounded-full bg-primary-fixed/30 text-on-primary-fixed-variant font-label-sm text-[10px]">Tepat Waktu</span>
-                                        @else
+                                        @elseif ($row->status === 'telat')
                                             <span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-[10px]">Terlambat</span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-[10px]">{{ $row->status === 'sakit' ? 'Sakit' : 'Izin' }}</span>
                                         @endif
                                     </div>
                                 </div>
@@ -512,6 +564,7 @@
             </div>
         </div>
 
+        {{-- ================= MODAL HASIL (ANIMASI) ================= --}}
         <div id="result-modal"
             style="display:none; position:fixed; inset:0; z-index:60; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,.45); backdrop-filter:blur(4px);">
             <div id="result-card"
@@ -544,6 +597,7 @@
             const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
             const POSITION_MAX_AGE = 5 * 60 * 1000; 
             const $ = (id) => document.getElementById(id);
+
             function tick() {
                 const now = new Date();
                 const t = now.toLocaleTimeString('id-ID', { hour12: false }).replace(/\./g, ':');
@@ -567,10 +621,6 @@
             }
             setInterval(tick, 1000);
             tick();
-
-            // =====================================================
-            // Modal hasil beranimasi
-            // =====================================================
             const resultModal = $('result-modal');
             const resultCard = $('result-card');
             const resultIcon = $('result-icon');
@@ -610,7 +660,6 @@
                 }
             }
 
-            // type: 'success' | 'warning' | 'error'
             function showResult({ type = 'success', title, message = '', details = [], buttonText = 'Selesai', onClose = null }) {
                 const accent = { success: '#006857', warning: '#d97706', error: '#ba1a1a' }[type];
                 resultCard.style.setProperty('--accent', accent);
@@ -661,6 +710,7 @@
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && resultModal.style.display === 'flex') closeResult();
             });
+
             if (!$('wizard')) return;
             let step = 1;
             let position = null; 
@@ -715,6 +765,7 @@
 
                 $('wizard').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+
             function setGps(state, badge, subtitle) {
                 const colors = {
                     idle: 'bg-surface-container-high text-on-surface-variant',
@@ -865,6 +916,7 @@
             } catch (e) {
                 console.error('Gagal membuat peta:', e);
             }
+
             const video = $('camera-preview');
             const placeholder = $('camera-placeholder');
             const canvas = $('camera-canvas');
@@ -905,7 +957,6 @@
                 btnTo3.style.display = 'none';
             }
 
-            // Tampilan: foto sudah diambil
             function showCaptured() {
                 capturedImg.src = photoData;
                 capturedImg.style.display = 'block';
@@ -952,7 +1003,6 @@
                 video.srcObject = null;
             }
 
-            // Ambil tepat area yang terlihat di preview (rasio 4:3)
             function capturePhoto() {
                 if (!video.videoWidth) return null;
                 const W = 640, H = 480, target = W / H;
@@ -1005,9 +1055,6 @@
             btnTo3.addEventListener('click', () => goToStep(3));
             $('btn-back-1').addEventListener('click', () => goToStep(1));
 
-            // =====================================================
-            // LANGKAH 3: Konfirmasi + kirim
-            // =====================================================
             function fillConfirm() {
                 $('confirm-photo').src = photoData;
                 $('confirm-type').textContent = MODE === 'in' ? 'Check-in' : 'Check-out';
@@ -1136,7 +1183,6 @@
             });
 
             window.addEventListener('beforeunload', stopCamera);
-
             locateUser();
         })();
     </script>

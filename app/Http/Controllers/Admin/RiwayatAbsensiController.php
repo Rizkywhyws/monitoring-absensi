@@ -8,15 +8,15 @@ use Illuminate\Http\Request;
 
 class RiwayatAbsensiController extends Controller
 {
-    /** Nilai kolom `status` di tabel attendances => label yang ditampilkan */
     private const STATUS_LABELS = [
         'hadir' => 'Tepat Waktu',
         'telat' => 'Terlambat',
+        'sakit' => 'Sakit',
+        'izin'  => 'Izin',
     ];
 
     public function index(Request $request)
     {
-        // "sampai" hanya dibandingkan dengan "dari" jika "dari" diisi
         $sampaiRules = ['nullable', 'date'];
         if ($request->filled('dari')) {
             $sampaiRules[] = 'after_or_equal:dari';
@@ -34,7 +34,6 @@ class RiwayatAbsensiController extends Controller
         $status  = $filters['status'] ?? null;
         $keyword = $filters['keyword'] ?? null;
 
-        // Query dasar: rentang tanggal + pencarian nama/NIM
         $base = Attendance::query()
             ->whereBetween('attendance_date', [$dari, $sampai])
             ->when($keyword, function ($q) use ($keyword) {
@@ -46,13 +45,11 @@ class RiwayatAbsensiController extends Controller
                 });
             });
 
-        // Rekap per status (mengikuti tanggal & pencarian, tidak mengikuti filter status)
         $rekap = (clone $base)
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
 
-        // Data tabel
         $attendances = (clone $base)
             ->when($status, fn ($q) => $q->where('status', $status))
             ->with('user.group')

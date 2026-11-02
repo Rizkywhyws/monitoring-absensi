@@ -5,11 +5,15 @@
 
 @section('content')
     @php
+        // Gaya badge status (kunci = nilai kolom `status` di database)
         $statusStyle = [
             'hadir' => 'bg-primary-fixed text-on-primary-fixed',
             'telat' => 'bg-error-container text-on-error-container',
+            'sakit' => 'bg-secondary-fixed text-on-secondary-fixed-variant',
+            'izin'  => 'bg-surface-container-high text-on-surface',
         ];
 
+        // Durasi kerja "8 j 05 m" (kosong jika belum check-out)
         $durasi = function ($a) {
             if (!$a->check_in || !$a->check_out) {
                 return '-';
@@ -23,6 +27,7 @@
 
     <div class="flex flex-col w-full gap-space-lg">
 
+        {{-- ================= JUDUL ================= --}}
         <div>
             <h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Riwayat Absensi</h1>
             <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
@@ -37,7 +42,9 @@
                 {{ $errors->first() }}
             </div>
         @endif
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
+
+        {{-- ================= RINGKASAN ================= --}}
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-space-md">
             <div class="rounded-2xl bg-surface-container-lowest shadow-sm p-space-md">
                 <p class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Total Absensi</p>
                 <p class="font-stat-counter text-stat-counter text-on-surface">{{ $rekap->sum() }}</p>
@@ -51,6 +58,8 @@
         </div>
 
         <div class="rounded-2xl bg-surface-container-lowest shadow-sm overflow-hidden">
+
+            {{-- ================= FILTER ================= --}}
             <div class="p-space-lg bg-surface-bright">
                 <form action="{{ route('admin.riwayat-absensi') }}" method="GET"
                     class="flex flex-wrap items-center gap-space-sm">
@@ -78,6 +87,8 @@
                     </a>
                 </form>
             </div>
+
+            {{-- ================= TABEL ================= --}}
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse">
                     <thead>
@@ -104,10 +115,22 @@
                                         @endif
                                     </div>
                                 </td>
+
+                                {{-- Tanggal --}}
                                 <td class="px-space-md py-space-sm border-b border-surface-container whitespace-nowrap">
                                     {{ $tanggal }}
                                 </td>
 
+                                {{-- Check-in & Check-out (kolom sama, hanya beda awalan kolom database) --}}
+                                @if (in_array($a->status, ['sakit', 'izin'], true))
+                                    {{-- Izin/sakit yang disetujui: tidak ada check-in/check-out --}}
+                                    <td colspan="2" class="px-space-md py-space-sm border-b border-surface-container text-on-surface-variant">
+                                        <span class="flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-[18px]">event_available</span>
+                                            Tidak masuk — {{ $a->status === 'sakit' ? 'sakit' : 'izin' }} disetujui admin
+                                        </span>
+                                    </td>
+                                @else
                                 @foreach (['in' => 'check_in', 'out' => 'check_out'] as $type => $col)
                                     @php
                                         $waktu    = $a->{$col};
@@ -120,6 +143,7 @@
                                     <td class="px-space-md py-space-sm border-b border-surface-container">
                                         @if ($waktu)
                                             <div class="flex items-center gap-space-sm">
+                                                {{-- Foto: klik untuk memperbesar --}}
                                                 @if ($adaFoto)
                                                     <button type="button" class="photo-thumb shrink-0 rounded-lg overflow-hidden"
                                                         data-photo="{{ route('absensi.photo', [$a, $type]) }}"
@@ -157,11 +181,14 @@
                                         @endif
                                     </td>
                                 @endforeach
+                                @endif
 
+                                {{-- Durasi --}}
                                 <td class="px-space-md py-space-sm border-b border-surface-container whitespace-nowrap">
                                     {{ $durasi($a) }}
                                 </td>
 
+                                {{-- Status --}}
                                 <td class="px-space-md py-space-sm border-b border-surface-container">
                                     <span class="inline-flex items-center gap-1 px-space-xs py-1 rounded-full {{ $statusStyle[$a->status] ?? 'bg-surface-container text-on-surface' }} font-label-md text-label-md font-bold whitespace-nowrap">
                                         ● {{ $statusOptions[$a->status] ?? ucfirst($a->status) }}
@@ -178,6 +205,8 @@
                     </tbody>
                 </table>
             </div>
+
+            {{-- ================= PAGINATION ================= --}}
             @if ($attendances->hasPages())
                 <div class="px-space-lg py-space-md flex flex-col sm:flex-row items-center justify-between gap-space-sm font-body-md text-body-md text-on-surface-variant">
                     <div>Menampilkan {{ $attendances->firstItem() ?? 0 }} - {{ $attendances->lastItem() ?? 0 }} dari {{ $attendances->total() }}</div>
@@ -206,6 +235,8 @@
             @endif
         </div>
     </div>
+
+    {{-- ================= LIGHTBOX FOTO ================= --}}
     <div id="photo-modal"
         style="display:none; position:fixed; inset:0; z-index:60; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,.6); backdrop-filter:blur(4px);"
         role="dialog" aria-modal="true">

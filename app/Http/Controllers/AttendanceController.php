@@ -70,7 +70,7 @@ class AttendanceController extends Controller
         $filters = $request->validate([
             'bulan'  => ['nullable', 'integer', 'between:1,12'],
             'tahun'  => ['nullable', 'integer', 'between:2020,2100'],
-            'status' => ['nullable', 'in:hadir,telat'],
+            'status' => ['nullable', 'in:hadir,telat,sakit,izin,alpha'],
         ]);
 
         $month  = (int) ($filters['bulan'] ?? now()->month);
@@ -84,35 +84,82 @@ class AttendanceController extends Controller
             ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()]);
 
         // Ringkasan bulan terpilih (tidak terpengaruh filter status)
-        $monthRecords = (clone $monthQuery)->get(['id', 'check_in', 'check_out', 'status']);
+        $monthRecords = (clone $monthQuery)->get(['id', 'attendance_date', 'check_in', 'check_out', 'status']);
 
-        $completed = $monthRecords->filter(fn ($a) => $a->check_in && $a->check_out);
+        // Rata-rata durasi hanya dari hari hadir/telat yang sudah check-out
+        $completed = $monthRecords->filter(
+            fn ($a) => in_array($a->status, ['hadir', 'telat'], true) && $a->check_in && $a->check_out
+        );
         $avgMinutes = $completed->isNotEmpty()
             ? (int) round($completed->avg(
                 fn ($a) => ($a->check_out->getTimestamp() - $a->check_in->getTimestamp()) / 60
             ))
             : null;
 
+        $hadir = $monthRecords->where('status', 'hadir')->count();
+        $telat = $monthRecords->where('status', 'telat')->count();
+        $sakit = $monthRecords->where('status', 'sakit')->count();
+        $izin  = $monthRecords->where('status', 'izin')->count();
+
+        // ---------- Alpha: hari kerja lampau tanpa catatan apa pun ----------
+        // Dihitung dari mulai periode PKL (atau absensi pertama jika periode kosong).
+        $firstDate = Attendance::where('user_id', $user->id)->min('attendance_date');
+        $joinedAt  = $user->periode_mulai
+            ? $user->periode_mulai->copy()->startOfDay()
+            : ($firstDate ? Carbon::parse($firstDate)->startOfDay() : null);
+
+        $alphaDates = [];
+
+        if ($joinedAt) {
+            $from = $start->copy();
+            if ($joinedAt->gt($from)) {
+                $from = $joinedAt->copy();
+            }
+
+            $to = $end->copy()->startOfDay();
+            $yesterday = today()->subDay();
+            if ($to->gt($yesterday)) {
+                $to = $yesterday;            // hari ini masih bisa check-in
+            }
+            if ($user->periode_selesai && $user->periode_selesai->copy()->startOfDay()->lt($to)) {
+                $to = $user->periode_selesai->copy()->startOfDay();
+            }
+
+            $recorded = $monthRecords
+                ->map(fn ($a) => $a->attendance_date->toDateString())
+                ->all();
+
+            for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
+                if ($d->isWeekday() && ! in_array($d->toDateString(), $recorded, true)) {
+                    $alphaDates[] = $d->copy();
+                }
+            }
+        }
+
         $summary = [
-            'total'       => $monthRecords->count(),
-            'hadir'       => $monthRecords->where('status', 'hadir')->count(),
-            'telat'       => $monthRecords->where('status', 'telat')->count(),
+            'total'       => $hadir + $telat,   // sakit/izin tidak dihitung sebagai hadir
+            'hadir'       => $hadir,
+            'telat'       => $telat,
+            'sakit'       => $sakit,
+            'izin'        => $izin,
+            'alpha'       => count($alphaDates),
             'avg_minutes' => $avgMinutes,
         ];
 
+        // Alpha tidak punya baris di tabel, jadi tidak difilter lewat kolom status
         $attendances = (clone $monthQuery)
-            ->when($status, fn ($q) => $q->where('status', $status))
+            ->when($status && $status !== 'alpha', fn ($q) => $q->where('status', $status))
             ->orderByDesc('attendance_date')
             ->paginate(10)
             ->withQueryString();
 
-        $firstDate = Attendance::where('user_id', $user->id)->min('attendance_date');
-        $minYear   = $firstDate ? (int) Carbon::parse($firstDate)->year : now()->year;
-        $years     = range(now()->year, min($minYear, now()->year));
+        $minYear = $firstDate ? (int) Carbon::parse($firstDate)->year : now()->year;
+        $years   = range(now()->year, min($minYear, now()->year));
 
         return view('user.riwayatAbsensi', [
             'attendances' => $attendances,
             'summary'     => $summary,
+            'alphaDates'  => $alphaDates,
             'month'       => $month,
             'year'        => $year,
             'status'      => $status,
