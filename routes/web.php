@@ -62,16 +62,16 @@ Route::middleware('auth')->group(function () {
         if ($request->user()->role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
-
+ 
         $user = $request->user()->load('group');
-
+ 
         $mulai   = $user->periode_mulai?->translatedFormat('d M Y');
         $selesai = $user->periode_selesai?->translatedFormat('d M Y');
         $riwayatAbsensi = \App\Models\Attendance::where('user_id', $user->id)
             ->orderByDesc('attendance_date')
             ->limit(7)
             ->get();
-
+ 
         $totalTiket   = \Illuminate\Support\Facades\DB::table('tickets')
             ->where('user_id', $user->id)->count();
         $tiketSelesai = \Illuminate\Support\Facades\DB::table('tickets')
@@ -81,16 +81,37 @@ Route::middleware('auth')->group(function () {
             ->whereNotNull('check_in')->count();
         $totalTelat = \App\Models\Attendance::where('user_id', $user->id)
             ->where('status', 'telat')->count();
-
-        $totalTidakHadir = 0;
+ 
+        $todayAttendance = \App\Models\Attendance::where('user_id', $user->id)
+            ->whereDate('attendance_date', today())
+            ->first();
+ 
+        $lastCheckIn = \App\Models\Attendance::where('user_id', $user->id)
+            ->whereNotNull('check_in')
+            ->whereDate('attendance_date', '<', today())
+            ->orderByDesc('attendance_date')
+            ->first();
+ 
+        $pendingLeave = \App\Models\LeaveRequest::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->whereDate('end_date', '>=', today())
+            ->orderBy('start_date')
+            ->first();
+ 
+        $setting = \App\Models\AttendanceSetting::where('status', 'active')->first();
+ 
+        $totalAlpha = 0;
+        $totalSakit = 0;
+        $totalIzin  = 0;
+ 
         if ($user->periode_mulai) {
             $awal  = $user->periode_mulai->copy()->startOfDay();
             $akhir = today()->subDay();
-
+ 
             if ($user->periode_selesai && $user->periode_selesai->lt($akhir)) {
                 $akhir = $user->periode_selesai->copy()->startOfDay();
             }
-
+ 
             if ($awal->lte($akhir)) {
                 $hariKerja = 0;
                 for ($d = $awal->copy(); $d->lte($akhir); $d->addDay()) {
@@ -98,21 +119,20 @@ Route::middleware('auth')->group(function () {
                         $hariKerja++;
                     }
                 }
-
-                $hadirDalamRentang = \App\Models\Attendance::where('user_id', $user->id)
-                    ->whereNotNull('check_in')
+ 
+                $catatan = \App\Models\Attendance::where('user_id', $user->id)
                     ->whereBetween('attendance_date', [$awal->toDateString(), $akhir->toDateString()])
-                    ->count();
-
-                $izinDalamRentang = \App\Models\Attendance::where('user_id', $user->id)
-                    ->whereIn('status', ['sakit', 'izin'])
-                    ->whereBetween('attendance_date', [$awal->toDateString(), $akhir->toDateString()])
-                    ->count();
-
-                $totalTidakHadir = max($hariKerja - $hadirDalamRentang - $izinDalamRentang, 0);
+                    ->get(['attendance_date', 'status']);
+ 
+                $totalSakit = $catatan->where('status', 'sakit')->count();
+                $totalIzin  = $catatan->where('status', 'izin')->count();
+                $tercatat   = $catatan->filter(fn ($a) => $a->attendance_date->isWeekday())->count();
+                $totalAlpha = max($hariKerja - $tercatat, 0);
             }
         }
-
+ 
+        $totalTidakHadir = $totalAlpha + $totalSakit + $totalIzin;
+ 
         return view('user.dashboard', [
             'userName'      => $user->name,
             'nim'           => $user->nim,
@@ -125,7 +145,18 @@ Route::middleware('auth')->group(function () {
             'tiketSelesai'    => $tiketSelesai,
             'totalHadir'      => $totalHadir,
             'totalTelat'      => $totalTelat,
+            'totalAlpha'      => $totalAlpha,
+            'totalSakit'      => $totalSakit,
+            'totalIzin'       => $totalIzin,
             'totalTidakHadir' => $totalTidakHadir,
+            'todayAttendance' => $todayAttendance,
+            'lastCheckIn'     => $lastCheckIn,
+            'pendingLeave'    => $pendingLeave,
+            'lateAfter'       => '08:15', 
+            'office'          => $setting ? [
+                'name'   => $setting->name,
+                'radius' => (float) $setting->radius,
+            ] : null,
         ]);
     })->name('dashboard');
 
