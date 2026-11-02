@@ -137,8 +137,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:10,1')->name('absensi.check-out');
     Route::get('/absensi/foto/{attendance}/{type}', [AttendanceController::class, 'photo'])
         ->name('absensi.photo');
-
-    // Pengajuan izin & sakit (peserta)  ->  izin, izin.store, izin.batal, izin.lampiran
     Route::get('/izin', [LeaveRequestController::class, 'index'])->name('izin');
     Route::post('/izin', [LeaveRequestController::class, 'store'])
         ->middleware('throttle:10,1')->name('izin.store');
@@ -155,3 +153,6 @@ Route::middleware('auth')->group(function () {
 Route::get('/user', function () {
     return view('user.index');
 })->name('user.index');
+    Route::get('/daily-activity', [\App\Http\Controllers\User\DailyActivityController::class, 'index'])->name('daily-activity.index');
+    Route::post('/daily-activity', [\App\Http\Controllers\User\DailyActivityController::class, 'store'])->name('daily-activity.store');
+
