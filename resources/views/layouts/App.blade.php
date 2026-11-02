@@ -410,12 +410,27 @@
             ->map(fn($w) => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($w, 0, 1)))
             ->implode('');
 
+        // Grup menu yang terbuka otomatis saat halaman terkait sedang dibuka
         $ticketGroupOpen = request()->routeIs('tickets', 'ticket.*');
+        $absensiGroupOpen = request()->routeIs('absensi', 'absensi.*');
+
+        // Dropdown Absensi (admin): Riwayat Absensi + Izin & Sakit
+        $adminAbsensiOpen = request()->routeIs('admin.riwayat-absensi*', 'admin.izin*');
+
+        // Jumlah pengajuan izin/sakit yang menunggu persetujuan (badge, hanya admin)
+        $pendingLeaves = $isAdmin
+            ? \App\Models\LeaveRequest::where('status', 'pending')->count()
+            : 0;
+
+        // Link "Riwayat Absensi" jatuh ke '#' selama route absensi.riwayat belum dibuat
+        $riwayatAbsensiUrl = \Illuminate\Support\Facades\Route::has('absensi.riwayat')
+            ? route('absensi.riwayat')
+            : '#';
 
         $adminMenu = [
             ['admin.dashboard', 'Dashboard', 'grid_view'],
             ['admin.daftar-user', 'User', 'group'],
-            ['admin.riwayat-absensi', 'Riwayat Absensi', 'co_present'],
+            ['admin.riwayat-absensi', 'Absensi', 'co_present'],
             ['admin.tickets', 'Ticket', 'confirmation_number'],
             ['admin.daily-activity.index', 'Daily Activity', 'event_note'],
             ['admin.laporan', 'Laporan', 'assessment'],
@@ -458,6 +473,55 @@
             <nav class="flex flex-col gap-space-xs px-space-xs">
                 @if ($isAdmin)
                     @foreach ($adminMenu as $m)
+                        {{-- Absensi (dropdown admin: Riwayat Absensi & Izin/Sakit) --}}
+                        @if ($m[0] === 'admin.riwayat-absensi')
+                            <div class="flex flex-col gap-space-2xs">
+                                <button type="button" data-toggle="submenu" aria-controls="submenuAdminAbsensi"
+                                    aria-expanded="{{ $adminAbsensiOpen ? 'true' : 'false' }}"
+                                    class="w-full {{ $navBase }} {{ $adminAbsensiOpen ? 'text-on-surface font-semibold' : $navIdle }}">
+                                    <div class="flex items-center gap-space-sm">
+                                        <span class="material-symbols-outlined text-[20px]">{{ $m[2] }}</span>
+                                        <span>{{ $m[1] }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-space-xs">
+                                        @if ($pendingLeaves > 0)
+                                            <span
+                                                class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
+                                                {{ $pendingLeaves }}
+                                            </span>
+                                        @endif
+                                        <span data-chevron
+                                            class="material-symbols-outlined text-[18px] transition-transform duration-150 {{ $adminAbsensiOpen ? 'rotate-180' : '' }}">
+                                            expand_more
+                                        </span>
+                                    </div>
+                                </button>
+
+                                <div id="submenuAdminAbsensi"
+                                    class="pl-space-md flex flex-col gap-space-2xs {{ $adminAbsensiOpen ? '' : 'hidden' }}">
+
+                                    <a href="{{ route('admin.riwayat-absensi') }}"
+                                        class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('admin.riwayat-absensi*') ? $navActive : $navIdle }}"
+                                        @if (request()->routeIs('admin.riwayat-absensi*')) aria-current="page" @endif>
+                                        Riwayat Absensi
+                                    </a>
+
+                                    <a href="{{ route('admin.izin') }}"
+                                        class="flex items-center justify-between px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('admin.izin*') ? $navActive : $navIdle }}"
+                                        @if (request()->routeIs('admin.izin*')) aria-current="page" @endif>
+                                        <span>Izin &amp; Sakit</span>
+                                        @if ($pendingLeaves > 0)
+                                            <span
+                                                class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
+                                                {{ $pendingLeaves }}
+                                            </span>
+                                        @endif
+                                    </a>
+                                </div>
+                            </div>
+                            @continue
+                        @endif
+
                         @php
                             $active = request()->routeIs(\Illuminate\Support\Str::beforeLast($m[0], '.index') . '*');
                             $href = \Illuminate\Support\Facades\Route::has($m[0]) ? route($m[0]) : '#';
@@ -481,6 +545,7 @@
                         </a>
                     @endforeach
                 @else
+                    {{-- Dashboard --}}
                     <a class="{{ $navBase }} {{ request()->routeIs('dashboard') ? $navActive : $navIdle }}"
                         href="{{ route('dashboard') }}" @if (request()->routeIs('dashboard')) aria-current="page" @endif>
 
@@ -492,6 +557,42 @@
                             <span>Dashboard</span>
                         </div>
                     </a>
+
+                    {{-- Absensi (dropdown: Absen & Riwayat Absensi) --}}
+                    <div class="flex flex-col gap-space-2xs">
+                        <button type="button" data-toggle="submenu" aria-controls="submenuAbsensi"
+                            aria-expanded="{{ $absensiGroupOpen ? 'true' : 'false' }}"
+                            class="w-full {{ $navBase }} {{ $absensiGroupOpen ? 'text-on-surface font-semibold' : $navIdle }}">
+
+                            <div class="flex items-center gap-space-sm">
+                                <span class="material-symbols-outlined text-[20px]">
+                                    schedule
+                                </span>
+                                <span>Absensi</span>
+                            </div>
+                            <span data-chevron
+                                class="material-symbols-outlined text-[18px] transition-transform duration-150 {{ $absensiGroupOpen ? 'rotate-180' : '' }}">
+                                expand_more
+                            </span>
+                        </button>
+                        <div id="submenuAbsensi"
+                            class="pl-space-md flex flex-col gap-space-2xs {{ $absensiGroupOpen ? '' : 'hidden' }}">
+
+                            <a href="{{ route('absensi') }}"
+                                class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('absensi') ? $navActive : $navIdle }}"
+                                @if (request()->routeIs('absensi')) aria-current="page" @endif>
+                                Absen
+                            </a>
+
+                            <a href="{{ $riwayatAbsensiUrl }}"
+                                class="flex items-center px-space-sm py-space-xs rounded-lg font-label-md text-label-md transition-colors {{ request()->routeIs('absensi.riwayat') ? $navActive : $navIdle }}"
+                                @if (request()->routeIs('absensi.riwayat')) aria-current="page" @endif>
+                                Riwayat Absensi
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Tiket Penugasan (dropdown) --}}
                     <div class="flex flex-col gap-space-2xs">
                         <button type="button" data-toggle="submenu" aria-controls="submenuTicket"
                             aria-expanded="{{ $ticketGroupOpen ? 'true' : 'false' }}"
@@ -524,9 +625,15 @@
                             </a>
                         </div>
                     </div>
+<<<<<<< HEAD
+
+                    {{-- Daily Activity --}}
+                    <a class="{{ $navBase }} {{ $navIdle }}" href="#">
+=======
                     <a class="{{ $navBase }} {{ request()->routeIs('daily-activity.*') ? $navActive : $navIdle }}"
                         href="{{ route('daily-activity.index') }}"
                         @if (request()->routeIs('daily-activity.*')) aria-current="page" @endif>
+>>>>>>> 631eb74990ddf3b8a8552ddf6ec9600b84276f99
                         <div class="flex items-center gap-space-sm">
                             <span class="material-symbols-outlined text-[20px]">
                                 assignment
@@ -535,6 +642,8 @@
                             <span>Daily Activity</span>
                         </div>
                     </a>
+
+                    {{-- Notifikasi --}}
                     <a class="{{ $navBase }} {{ $navIdle }}" href="#">
                         <div class="flex items-center gap-space-sm">
                             <span class="material-symbols-outlined text-[20px]">
@@ -548,6 +657,8 @@
                             3
                         </span>
                     </a>
+
+                    {{-- Profil --}}
                     <a class="{{ $navBase }} {{ $navIdle }}" href="{{ $profileUrl ?? '#' }}">
                         <div class="flex items-center gap-space-sm">
                             <span class="material-symbols-outlined text-[20px]">
@@ -740,7 +851,7 @@
             <div class="px-space-xl pt-space-xl pb-space-lg flex flex-col items-center">
                 <div class="relative w-20 h-20 mb-space-md flex items-center justify-center">
                     <div class="absolute inset-0 rounded-full bg-error/10"></div>
-                    <sVg class="relative w-12 h-12 text-error" viewBox="0 0 52 52" fill="none"
+                    <svg class="relative w-12 h-12 text-error" viewBox="0 0 52 52" fill="none"
                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                         <circle class="pp-ring" cx="26" cy="26" r="24" pathLength="1"></circle>
                         <path class="pp-mark" d="M26 15 v14 M26 36 v.5" pathLength="1"></path>
@@ -786,6 +897,8 @@
             }
             menuBtn?.addEventListener('click', toggleSidebar);
             backdrop?.addEventListener('click', toggleSidebar);
+
+            // Dropdown submenu sidebar (Absensi & Tiket Penugasan)
             document.querySelectorAll('[data-toggle="submenu"]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const menu = document.getElementById(

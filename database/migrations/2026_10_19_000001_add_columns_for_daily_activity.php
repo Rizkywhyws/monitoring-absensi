@@ -4,10 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Menambah kolom yang dipakai halaman Daily Activity, HANYA jika belum ada.
- * Kalau tabel users/tickets Anda sudah punya kolom ini, migration ini tidak mengubah apa-apa.
- */
+
 return new class extends Migration
 {
     public function up(): void

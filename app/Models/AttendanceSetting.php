@@ -14,12 +14,9 @@ class AttendanceSetting extends Model
         'status',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'latitude' => 'decimal:7',
-            'longitude' => 'decimal:7',
-            'radius' => 'decimal:2',
-        ];
-    }
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'radius' => 'float',
+    ];
 }

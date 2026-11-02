@@ -1,4 +1,4 @@
-@extends('layouts.app') {{-- samakan dengan layout dashboard admin Anda --}}
+@extends('layouts.app') 
 
 @section('content')
 <div class="space-y-6">
@@ -12,7 +12,6 @@
         </p>
     </div>
 
-    {{-- Kartu ringkasan --}}
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-xl bg-white p-4 shadow-sm">
             <p class="text-xs font-semibold text-slate-500">Total Siswa aktif</p>

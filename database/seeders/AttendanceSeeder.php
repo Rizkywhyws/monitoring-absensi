@@ -11,10 +11,8 @@ class AttendanceSeeder extends Seeder
 {
     public function run(): void
     {
-        // Cari user kamu; kalau tidak ketemu, pakai user pertama
         $user = User::findOrFail(31);
 
-        // 10 hari kerja terakhir: [status, jam check-in, jam check-out, jarak (meter)]
         $pola = [
             ['hadir', '07:52', '17:05', 18],
             ['hadir', '07:58', '17:10', 42],
@@ -31,7 +29,6 @@ class AttendanceSeeder extends Seeder
         $tanggal = Carbon::yesterday();
 
         foreach ($pola as [$status, $in, $out, $jarak]) {
-            // Lewati Sabtu & Minggu
             while ($tanggal->isWeekend()) {
                 $tanggal->subDay();
             }

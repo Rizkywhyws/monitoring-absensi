@@ -2,14 +2,16 @@
 
 use App\Http\Controllers\Admin\DaftarUserController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Admin\RiwayatAbsensiController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\User\TicketController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\DailyActivityController;
+use App\Http\Controllers\Admin\LeaveRequestController;
+use App\Http\Controllers\Admin\LeaveApprovalController;
 
 
 Route::get('/', function () {
@@ -29,12 +31,12 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
     Route::get('/riwayat-absensi', [RiwayatAbsensiController::class, 'index'])->name('riwayat-absensi');
-
-
+    Route::get('/izin', [LeaveApprovalController::class, 'index'])->name('izin');
+    Route::put('/izin/{leave}/setujui', [LeaveApprovalController::class, 'approve'])->name('izin.setujui');
+    Route::put('/izin/{leave}/tolak', [LeaveApprovalController::class, 'reject'])->name('izin.tolak');
+    Route::put('/izin/{leave}/cabut', [LeaveApprovalController::class, 'revoke'])->name('izin.cabut');
 
     Route::get('/daily-activity', [DailyActivityController::class, 'index'])->name('daily-activity.index');
     Route::get('/daily-activity/{user}', [DailyActivityController::class, 'show'])->name('daily-activity.show');
@@ -55,97 +57,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     });
 });
 
-Route::get('/dashboard', function () {
-    return view('user.dashboard', [
-        'userName'      => 'Refangga Ardiansah',
-        'initials'      => 'RA',
-        'nim'           => '240810101052',
-        'periodeMagang' => '01 Agu 2026 – 30 Sep 2026',
-        'divisi'        => 'Instalasi & Jaringan',
-        'pembimbing'    => 'Bpk. Hendra Kusuma',
-        'kampus'        => 'Politeknik Negeri Jember',
-    ]);
-})->name('dashboard');
-
-Route::get('/absensi', [AttendanceController::class, 'index'])
-    ->name('absensi');
-Route::post('/absensi/check-in', [AttendanceController::class, 'checkIn'])
-    ->name('absensi.check-in');
-
-Route::get('/absensi', function () {
-    return view('user.absensi', [
-        'userName' => 'Refangga Ardiansah',
-        'nim'      => '240810101052',
-    ]);
-})->name('absensi');
-
-
-Route::get('/user', function () {
-    return view('user.index');
-})->name('user.index');
-
-Route::prefix('admin')
-    ->name('admin.')
-    ->middleware(['auth'])
-    ->group(function () {
-        Route::get('/daftar-user', [
-            DaftarUserController::class,
-            'index'
-        ])->name('daftar-user');
-
-        Route::get('/daftar-user/tambah', [
-            DaftarUserController::class,
-            'tambah'
-        ])->name('daftar-user.tambah');
-
-        Route::post('/daftar-user/simpan', [
-            DaftarUserController::class,
-            'simpan'
-        ])->name('daftar-user.simpan');
-
-        Route::get('/daftar-user/{id}/edit', [
-            DaftarUserController::class,
-            'edit'
-        ])->name('daftar-user.edit');
-
-        Route::put('/daftar-user/{id}', [
-            DaftarUserController::class,
-            'update'
-        ])->name('daftar-user.update');
-
-        Route::put('/daftar-user/{id}/kelompok', [
-            DaftarUserController::class,
-            'ubahKelompok'
-        ])->name('daftar-user.kelompok');
-
-        Route::put('/daftar-user/{id}/reset-password', [
-            DaftarUserController::class,
-            'resetPassword'
-        ])->name('daftar-user.reset-password');
-
-        Route::put('/daftar-user/{id}/aktifkan', [
-            DaftarUserController::class,
-            'aktifkan'
-        ])->name('daftar-user.aktifkan');
-
-        Route::put('/daftar-user/{id}/nonaktifkan', [
-            DaftarUserController::class,
-            'nonaktifkan'
-        ])->name('daftar-user.nonaktifkan');
-
-
-        Route::delete('/daftar-user/{id}', [
-            DaftarUserController::class,
-            'hapus'
-        ])->name('daftar-user.hapus');
-
-
-        Route::get('/daftar-user/{id}', [
-            DaftarUserController::class,
-            'detail'
-        ])->name('daftar-user.detail');
-
-    });
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function (Request $request) {
         if ($request->user()->role === 'admin') {
@@ -161,46 +72,46 @@ Route::middleware('auth')->group(function () {
             ->limit(7)
             ->get();
 
-        // Total tiket milik user
-$totalTiket   = \Illuminate\Support\Facades\DB::table('tickets')
-    ->where('user_id', $user->id)->count();
-$tiketSelesai = \Illuminate\Support\Facades\DB::table('tickets')
-    ->where('user_id', $user->id)
-    ->whereIn('status', ['done', 'verified'])->count();
+        $totalTiket   = \Illuminate\Support\Facades\DB::table('tickets')
+            ->where('user_id', $user->id)->count();
+        $tiketSelesai = \Illuminate\Support\Facades\DB::table('tickets')
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['done', 'verified'])->count();
+        $totalHadir = \App\Models\Attendance::where('user_id', $user->id)
+            ->whereNotNull('check_in')->count();
+        $totalTelat = \App\Models\Attendance::where('user_id', $user->id)
+            ->where('status', 'telat')->count();
 
-// Total absen hadir (tepat waktu + telat)
-$totalHadir = \App\Models\Attendance::where('user_id', $user->id)
-    ->whereNotNull('check_in')->count();
-$totalTelat = \App\Models\Attendance::where('user_id', $user->id)
-    ->where('status', 'telat')->count();
+        $totalTidakHadir = 0;
+        if ($user->periode_mulai) {
+            $awal  = $user->periode_mulai->copy()->startOfDay();
+            $akhir = today()->subDay();
 
-// Total tidak hadir = hari kerja (Senin-Jumat) sejak periode mulai sampai kemarin,
-// dikurangi hari yang ada absennya
-$totalTidakHadir = 0;
-if ($user->periode_mulai) {
-    $awal  = $user->periode_mulai->copy()->startOfDay();
-    $akhir = today()->subDay();
+            if ($user->periode_selesai && $user->periode_selesai->lt($akhir)) {
+                $akhir = $user->periode_selesai->copy()->startOfDay();
+            }
 
-    if ($user->periode_selesai && $user->periode_selesai->lt($akhir)) {
-        $akhir = $user->periode_selesai->copy()->startOfDay();
-    }
+            if ($awal->lte($akhir)) {
+                $hariKerja = 0;
+                for ($d = $awal->copy(); $d->lte($akhir); $d->addDay()) {
+                    if ($d->isWeekday()) {
+                        $hariKerja++;
+                    }
+                }
 
-    if ($awal->lte($akhir)) {
-        $hariKerja = 0;
-        for ($d = $awal->copy(); $d->lte($akhir); $d->addDay()) {
-            if ($d->isWeekday()) {
-                $hariKerja++;
+                $hadirDalamRentang = \App\Models\Attendance::where('user_id', $user->id)
+                    ->whereNotNull('check_in')
+                    ->whereBetween('attendance_date', [$awal->toDateString(), $akhir->toDateString()])
+                    ->count();
+
+                $izinDalamRentang = \App\Models\Attendance::where('user_id', $user->id)
+                    ->whereIn('status', ['sakit', 'izin'])
+                    ->whereBetween('attendance_date', [$awal->toDateString(), $akhir->toDateString()])
+                    ->count();
+
+                $totalTidakHadir = max($hariKerja - $hadirDalamRentang - $izinDalamRentang, 0);
             }
         }
-
-        $hadirDalamRentang = \App\Models\Attendance::where('user_id', $user->id)
-            ->whereNotNull('check_in')
-            ->whereBetween('attendance_date', [$awal->toDateString(), $akhir->toDateString()])
-            ->count();
-
-        $totalTidakHadir = max($hariKerja - $hadirDalamRentang, 0);
-    }
-}
 
         return view('user.dashboard', [
             'userName'      => $user->name,
@@ -218,16 +129,30 @@ if ($user->periode_mulai) {
         ]);
     })->name('dashboard');
 
-    Route::get('/absensi', fn(Request $request) => view('user.absensi', [
-        'userName' => $request->user()->name,
-        'nim'      => $request->user()->nim,
-    ]))->name('absensi');
+    Route::get('/absensi', [AttendanceController::class, 'index'])->name('absensi');
+    Route::get('/absensi/riwayat', [AttendanceController::class, 'riwayat'])->name('absensi.riwayat');
+    Route::post('/absensi/check-in', [AttendanceController::class, 'checkIn'])
+        ->middleware('throttle:10,1')->name('absensi.check-in');
+    Route::post('/absensi/check-out', [AttendanceController::class, 'checkOut'])
+        ->middleware('throttle:10,1')->name('absensi.check-out');
+    Route::get('/absensi/foto/{attendance}/{type}', [AttendanceController::class, 'photo'])
+        ->name('absensi.photo');
+    Route::get('/izin', [LeaveRequestController::class, 'index'])->name('izin');
+    Route::post('/izin', [LeaveRequestController::class, 'store'])
+        ->middleware('throttle:10,1')->name('izin.store');
+    Route::put('/izin/{leave}/batal', [LeaveRequestController::class, 'cancel'])->name('izin.batal');
+    Route::get('/izin/{leave}/lampiran', [LeaveRequestController::class, 'attachment'])->name('izin.lampiran');
 
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets');
     Route::get('/tickets/create', [TicketController::class, 'create'])->name('ticket.create');
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('ticket.show')->whereNumber('ticket');
     Route::post('/tickets', [TicketController::class, 'store'])->name('ticket.store');
     Route::put('/tickets/{ticket}', [TicketController::class, 'update'])->name('ticket.update');
+});
+
+Route::get('/user', function () {
+    return view('user.index');
+})->name('user.index');
     Route::get('/daily-activity', [\App\Http\Controllers\User\DailyActivityController::class, 'index'])->name('daily-activity.index');
     Route::post('/daily-activity', [\App\Http\Controllers\User\DailyActivityController::class, 'store'])->name('daily-activity.store');
-});
+
