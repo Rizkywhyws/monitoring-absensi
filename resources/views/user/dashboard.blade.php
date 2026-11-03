@@ -31,7 +31,7 @@
             <div class="flex items-center gap-space-xs">
                 <span
                     class="font-label-sm text-label-sm uppercase tracking-widest text-primary font-bold">Ringkasan
-                    Mahasiswa PKL</span>
+                    Peserta PKL</span>
                 <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
                 <span class="font-label-sm text-label-sm text-on-surface-variant font-medium">{{ $kampus ?? 'PLN Icon Plus KP Jember' }}</span>
             </div>
