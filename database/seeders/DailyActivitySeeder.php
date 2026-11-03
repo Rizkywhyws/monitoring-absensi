@@ -7,14 +7,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Data dummy untuk halaman Daily Activity.
- * Jalankan: php artisan db:seed --class=DailyActivitySeeder
- * Aman dijalankan berulang kali (data dummy lama dihapus dulu).
- */
+
 class DailyActivitySeeder extends Seeder
 {
-    /** Insert 1 baris, otomatis membuang kolom yang tidak ada di tabel. */
     private function insertRow(string $table, array $row): int
     {
         $columns = array_flip(Schema::getColumnListing($table));
@@ -22,7 +17,6 @@ class DailyActivitySeeder extends Seeder
         return DB::table($table)->insertGetId(array_intersect_key($row, $columns));
     }
 
-    /** Kalau kolom bertipe enum, kembalikan daftar nilainya. Kalau bukan, null. */
     private function enumValues(string $table, string $column): ?array
     {
         $row = DB::selectOne("SHOW COLUMNS FROM `{$table}` WHERE Field = ?", [$column]);
@@ -34,7 +28,6 @@ class DailyActivitySeeder extends Seeder
         return null;
     }
 
-    /** Pilih nilai pertama dari $candidates yang ada di enum. Kalau bukan enum, pakai $candidates[0]. */
     private function pick(?array $enum, array $candidates, string $what): string
     {
         if ($enum === null) {
@@ -57,7 +50,6 @@ class DailyActivitySeeder extends Seeder
     {
         $now = now();
 
-        // Baca pilihan nilai dari database Anda
         $statusEnum   = $this->enumValues('tickets', 'status');
         $priorityEnum = $this->enumValues('tickets', 'priority');
         $categoryEnum = $this->enumValues('tickets', 'category');
@@ -69,14 +61,12 @@ class DailyActivitySeeder extends Seeder
 
         $this->command?->info("Status selesai yang dipakai: {$statusDone}");
 
-        // 1. Hapus data dummy lama
         $oldIds = DB::table('users')->where('email', 'like', '%@dummy.test')->pluck('id');
         DB::table('daily_activities')->whereIn('user_id', $oldIds)->delete();
         DB::table('tickets')->whereIn('user_id', $oldIds)->delete();
         DB::table('users')->whereIn('id', $oldIds)->delete();
         DB::table('tickets')->where('ticket_number', 'like', 'DMY-%')->delete();
 
-        // 2. Mahasiswa dummy
         $students = [
             ['Refangga Ardiansah', '22053460012', 'Univ. Jember',             'Install & Aktivasi', 'Posko Jember Kota'],
             ['Dimas Pratama',      '22053460045', 'Politeknik Negeri Jember', 'Install & Aktivasi', 'Posko Jember Timur'],
@@ -104,7 +94,6 @@ class DailyActivitySeeder extends Seeder
             ]);
         }
 
-        // 3. Judul tiket per divisi
         $catalog = [
             'Install & Aktivasi' => [
                 ['Splicing ODP-JBR-042', $priorityHigh],
@@ -124,14 +113,11 @@ class DailyActivitySeeder extends Seeder
             ],
         ];
 
-        // 4. Tiket selesai: hari ini sampai 4 hari ke belakang.
-        //    Setiap hari mahasiswa dan tiketnya sengaja BERBEDA supaya filter tanggal terlihat bekerja.
         $counter = 1;
-        $worked  = []; // mahasiswa mana yang punya tiket di hari ke-berapa
+        $worked  = []; 
 
         foreach ($students as $i => [$name, $nim, , $division]) {
             foreach (range(0, 4) as $daysAgo) {
-                // Selang-seling: tiap hari ada mahasiswa yang tidak mengerjakan tiket
                 if (($i + $daysAgo) % 3 === 2) {
                     continue;
                 }
@@ -170,8 +156,6 @@ class DailyActivitySeeder extends Seeder
             }
         }
 
-        // 5. Catatan logbook: hanya untuk hari yang ada tiketnya.
-        //    Hari ini, mahasiswa urutan ganjil sengaja belum mengisi.
         foreach ($students as $i => [, $nim]) {
             foreach (range(0, 4) as $daysAgo) {
                 if (empty($worked[$nim][$daysAgo])) {

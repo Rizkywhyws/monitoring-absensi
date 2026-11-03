@@ -8,35 +8,51 @@ use Illuminate\Http\Request;
 
 class RiwayatAbsensiController extends Controller
 {
+    private const STATUS_LABELS = [
+        'hadir' => 'Tepat Waktu',
+        'telat' => 'Terlambat',
+        'sakit' => 'Sakit',
+        'izin'  => 'Izin',
+    ];
+
     public function index(Request $request)
     {
-        $data = $request->validate([
+        $sampaiRules = ['nullable', 'date'];
+        if ($request->filled('dari')) {
+            $sampaiRules[] = 'after_or_equal:dari';
+        }
+
+        $filters = $request->validate([
             'keyword' => ['nullable', 'string', 'max:100'],
-            'status'  => ['nullable', 'string', 'max:30'],
+            'status'  => ['nullable', 'in:' . implode(',', array_keys(self::STATUS_LABELS))],
             'dari'    => ['nullable', 'date'],
-            'sampai'  => ['nullable', 'date', 'after_or_equal:dari'],
+            'sampai'  => $sampaiRules,
         ]);
 
-        $dari   = $data['dari']   ?? now()->startOfMonth()->toDateString();
-        $sampai = $data['sampai'] ?? now()->toDateString();
+        $dari    = $filters['dari']   ?? now()->startOfMonth()->toDateString();
+        $sampai  = $filters['sampai'] ?? now()->toDateString();
+        $status  = $filters['status'] ?? null;
+        $keyword = $filters['keyword'] ?? null;
 
-        $query = Attendance::query()
-            ->with('user.group')
-            ->betweenDates($dari, $sampai)
-            ->when($data['status'] ?? null, fn($q, $s) => $q->where('status', $s))
-            ->when($data['keyword'] ?? null, function ($q, $k) {
-                $q->whereHas('user', fn($u) => $u
-                    ->where('name', 'like', "%{$k}%")
-                    ->orWhere('nim', 'like', "%{$k}%"));
+        $base = Attendance::query()
+            ->whereBetween('attendance_date', [$dari, $sampai])
+            ->when($keyword, function ($q) use ($keyword) {
+                $q->whereHas('user', function ($u) use ($keyword) {
+                    $u->where(function ($w) use ($keyword) {
+                        $w->where('name', 'like', "%{$keyword}%")
+                          ->orWhere('nim', 'like', "%{$keyword}%");
+                    });
+                });
             });
 
-        $rekap = $query->clone()
-            ->reorder()
+        $rekap = (clone $base)
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
 
-        $attendances = $query
+        $attendances = (clone $base)
+            ->when($status, fn ($q) => $q->where('status', $status))
+            ->with('user.group')
             ->orderByDesc('attendance_date')
             ->orderByDesc('check_in')
             ->paginate(20)
@@ -45,7 +61,7 @@ class RiwayatAbsensiController extends Controller
         return view('admin.riwayat-absensi.index', [
             'attendances'   => $attendances,
             'rekap'         => $rekap,
-            'statusOptions' => Attendance::STATUS_LABELS,
+            'statusOptions' => self::STATUS_LABELS,
             'dari'          => $dari,
             'sampai'        => $sampai,
         ]);
