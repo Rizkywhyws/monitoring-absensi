@@ -199,5 +199,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/daily-activity', [UserDailyActivityController::class, 'index'])->name('daily-activity.index');
     Route::post('/daily-activity', [UserDailyActivityController::class, 'store'])->name('daily-activity.store');
 
+    Route::get('/profil', [\App\Http\Controllers\User\ProfileController::class, 'show'])->name('profil');
+    Route::put('/profil', [\App\Http\Controllers\User\ProfileController::class, 'update'])->name('profil.update');
+
     Route::get('/user', fn() => view('user.index'))->name('user.index');
 });

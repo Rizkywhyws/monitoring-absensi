@@ -665,7 +665,9 @@
                             <span>Daily Activity</span>
                         </div>
                     </a>
-                    <a class="{{ $navBase }} {{ $navIdle }}" href="{{ $profileUrl ?? '#' }}">
+                                        <a class="{{ $navBase }} {{ request()->routeIs('profil*') ? $navActive : $navIdle }}"
+                        href="{{ $profileUrl ?? '#' }}"
+                        @if (request()->routeIs('profil*')) aria-current="page" @endif>
                         <div class="flex items-center gap-space-sm">
                             <span class="material-symbols-outlined text-[20px]">
                                 person
