@@ -8,54 +8,35 @@ use App\Models\Ticket;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
-/**
- * Daily Activity versi PESERTA: hanya menampilkan data akun yang sedang login.
- */
 class DailyActivityController extends Controller
 {
-    /** Nilai kolom tickets.status untuk tiket yang sudah selesai. Ubah di sini kalau beda. */
-    private const DONE_STATUS = 'done';
-
     public function index(Request $request)
     {
         $user = $request->user();
         $date = $this->resolveDate($request);
 
-        // Tiket milik user ini yang selesai pada tanggal terpilih
-        $tickets = Ticket::where('user_id', $user->id)
-            ->where('status', self::DONE_STATUS)
-            ->whereDate('completed_at', $date)
+        $tickets = $this->finishedOn($user->id, $date)
             ->orderBy('completed_at')
-            ->get()
-            ->each(function ($t) {
-                $t->start_at = $t->started_at ? Carbon::parse($t->started_at) : null;
-                $t->end_at   = $t->completed_at ? Carbon::parse($t->completed_at) : null;
-                $t->duration_minutes = ($t->start_at && $t->end_at)
-                    ? (int) round($t->start_at->diffInMinutes($t->end_at))
-                    : null;
-            });
+            ->get();
 
-        // Jam kerja hari itu: tiket pertama mulai -> tiket terakhir selesai
-        $workStart = $tickets->pluck('start_at')->filter()->min();
-        $workEnd   = $tickets->pluck('end_at')->filter()->max();
+        $workStart = $tickets->pluck('started_at')->filter()->min();
+        $workEnd   = $tickets->pluck('completed_at')->filter()->max();
         $workMinutes = ($workStart && $workEnd)
-            ? (int) round($workStart->diffInMinutes($workEnd))
+            ? (int) round($workStart->diffInMinutes($workEnd, true))
             : null;
 
         $activity = DailyActivity::where('user_id', $user->id)
             ->whereDate('activity_date', $date)
             ->first();
-
-        // Rekap 7 hari yang berakhir di tanggal terpilih
         $rangeStart = $date->copy()->subDays(6)->startOfDay();
         $rangeEnd   = $date->copy()->endOfDay();
 
         $countPerDay = Ticket::where('user_id', $user->id)
-            ->where('status', self::DONE_STATUS)
+            ->whereIn('status', Ticket::FINISHED)
             ->whereBetween('completed_at', [$rangeStart, $rangeEnd])
-            ->get(['completed_at'])
-            ->groupBy(fn ($t) => Carbon::parse($t->completed_at)->toDateString())
-            ->map->count();
+            ->selectRaw('DATE(completed_at) as day, COUNT(*) as total')
+            ->groupBy('day')
+            ->pluck('total', 'day');
 
         $loggedDays = DailyActivity::where('user_id', $user->id)
             ->whereBetween('activity_date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
@@ -70,7 +51,7 @@ class DailyActivityController extends Controller
             return [
                 'date'   => $key,
                 'label'  => $d->translatedFormat('D, d M'),
-                'count'  => $countPerDay->get($key, 0),
+                'count'  => (int) $countPerDay->get($key, 0),
                 'logged' => $loggedDays->has($key),
                 'active' => $i === 0,
             ];
@@ -87,13 +68,10 @@ class DailyActivityController extends Controller
             'workMinutes' => $workMinutes,
             'activity'    => $activity,
             'recap'       => $recap,
-            'weekTotal'   => $countPerDay->sum(),
+            'weekTotal'   => (int) $countPerDay->sum(),
         ]);
     }
 
-    /**
-     * Simpan / perbarui catatan harian milik user yang sedang login.
-     */
     public function store(Request $request)
     {
         $user = $request->user();
@@ -103,28 +81,32 @@ class DailyActivityController extends Controller
             'description'   => ['required', 'string', 'max:5000'],
         ]);
 
-        $hasTickets = Ticket::where('user_id', $user->id)
-            ->where('status', self::DONE_STATUS)
-            ->whereDate('completed_at', $data['activity_date'])
-            ->exists();
+        $date = Carbon::parse($data['activity_date'])->startOfDay();
 
-        if (! $hasTickets) {
+        if (! $this->finishedOn($user->id, $date)->exists()) {
             return back()
                 ->withErrors(['description' => 'Belum ada tiket selesai pada tanggal ini, jadi catatan belum bisa disimpan.'])
                 ->withInput();
         }
 
         DailyActivity::updateOrCreate(
-            ['user_id' => $user->id, 'activity_date' => $data['activity_date']],
+            ['user_id' => $user->id, 'activity_date' => $date->toDateString()],
             ['description' => $data['description']],
         );
 
         return redirect()
-            ->route('daily-activity.index', ['date' => $data['activity_date']])
+            ->route('daily-activity.index', ['date' => $date->toDateString()])
             ->with('success', 'Catatan harian disimpan.');
     }
 
-    /** Baca ?date=...; kalau kosong/salah pakai hari ini; tidak boleh melebihi hari ini. */
+    private function finishedOn(int $userId, Carbon $date)
+    {
+        return Ticket::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', Ticket::FINISHED)
+            ->whereBetween('completed_at', [$date->copy()->startOfDay(), $date->copy()->endOfDay()]);
+    }
+
     private function resolveDate(Request $request): Carbon
     {
         try {

@@ -50,6 +50,8 @@
 
 @section('content')
     @php
+        $isAdmin = auth()->user()->role === 'admin';
+
         $percentOf = fn($value) => $stats['total'] > 0 ? round(($value / $stats['total']) * 100) : 0;
 
         $initialsOf = fn($name) => \Illuminate\Support\Str::upper(
@@ -63,10 +65,24 @@
             ? number_format($bytes / 1048576, 1) . ' MB'
             : max(1, round($bytes / 1024)) . ' KB';
 
+        // Label + warna badge per status. Satu sumber untuk seluruh view.
+        $statusMeta = [
+            'to_do'       => ['label' => 'To Do',       'class' => 'bg-surface-container-high text-on-surface-variant'],
+            'on_progress' => ['label' => 'On Progress', 'class' => 'bg-amber-50 text-tertiary'],
+            'hold'        => ['label' => 'Hold',        'class' => 'bg-surface-container-high text-on-surface-variant'],
+            'revision'    => ['label' => 'Revisi',      'class' => 'bg-error-container text-on-error-container'],
+            'done'        => ['label' => 'Selesai',     'class' => 'bg-primary/10 text-primary'],
+            'verified'    => ['label' => 'Terverifikasi', 'class' => 'bg-primary/10 text-primary'],
+            'cancelled'   => ['label' => 'Dibatalkan',  'class' => 'bg-surface-container-high text-on-surface-variant'],
+        ];
+
         $cardClass =
             'relative overflow-hidden rounded-xl bg-surface-container-lowest p-5 shadow-sm flex flex-col justify-between gap-4 group hover:shadow-md transition-shadow';
 
-        $ticketsData = $tickets->mapWithKeys(function ($ticket) use ($initialsOf, $formatSize) {
+        $ticketsData = $tickets->mapWithKeys(function ($ticket) use ($initialsOf, $formatSize, $isAdmin, $statusMeta) {
+            $isFinished = in_array($ticket->status, \App\Models\Ticket::FINISHED, true);
+            $isOwner = $ticket->user_id === auth()->id();
+
             return [
                 $ticket->id => [
                     'number' => $ticket->ticket_number,
@@ -75,7 +91,8 @@
                     'creator' => $ticket->user->name ?? '-',
                     'initials' => $initialsOf($ticket->user->name ?? '-'),
                     'createdAt' => $ticket->created_at->translatedFormat('d M Y, H:i'),
-                    'canEdit' => auth()->user()->role === 'admin' || $ticket->user_id === auth()->id(),
+                    'status' => $statusMeta[$ticket->status]['label'] ?? $ticket->status,
+                    'canEdit' => $isAdmin || ($isOwner && ! $isFinished),
                     'attachments' => $ticket->attachments->map(fn($attachment) => [
                         'id' => $attachment->id,
                         'name' => $attachment->file_name,
@@ -94,6 +111,13 @@
             <div class="flex items-center gap-3 rounded-xl bg-primary/10 text-primary px-4 py-3 font-label-lg text-label-lg">
                 <span class="material-symbols-outlined text-[20px]">check_circle</span>
                 <span>{{ session('success') }}</span>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="flex items-center gap-3 rounded-xl bg-error-container text-on-error-container px-4 py-3 font-label-lg text-label-lg">
+                <span class="material-symbols-outlined text-[20px]">error</span>
+                <span>{{ $errors->first() }}</span>
             </div>
         @endif
 
@@ -233,11 +257,19 @@
                             <th class="py-3.5 px-4 font-semibold min-w-[320px]">Detail Pekerjaan</th>
                             <th class="py-3.5 px-4 font-semibold min-w-[180px]">Pembuat</th>
                             <th class="py-3.5 px-4 font-semibold w-32">Lampiran</th>
-                            <th class="py-3.5 px-4 font-semibold text-right w-48">Aksi</th>
+                            <th class="py-3.5 px-4 font-semibold text-right w-64">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-surface-container">
                         @forelse ($tickets as $ticket)
+                            @php
+                                $meta = $statusMeta[$ticket->status] ?? ['label' => $ticket->status, 'class' => 'bg-surface-container-high text-on-surface-variant'];
+                                $isOwner = $ticket->user_id === auth()->id();
+                                $isFinished = in_array($ticket->status, \App\Models\Ticket::FINISHED, true);
+                                $canStart = $isOwner && in_array($ticket->status, ['to_do', 'hold', 'revision'], true);
+                                $canComplete = $isOwner && $ticket->status === 'on_progress';
+                                $canEdit = $isAdmin || ($isOwner && ! $isFinished);
+                            @endphp
                             <tr class="hover:bg-surface-container-low/60 transition-colors group">
                                 <td class="py-4 px-4 align-top">
                                     <div class="flex flex-col gap-1">
@@ -255,6 +287,10 @@
                                         <div class="font-headline-sm text-headline-sm text-on-surface font-semibold">
                                             {{ $ticket->title }}
                                         </div>
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm font-semibold {{ $meta['class'] }}">
+                                            {{ $meta['label'] }}
+                                        </span>
                                         <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 max-w-xl">
                                             {{ \Illuminate\Support\Str::limit($ticket->description, 140) }}
                                         </p>
@@ -286,13 +322,37 @@
                                     @endif
                                 </td>
                                 <td class="py-4 px-4 align-top text-right">
-                                    <div class="inline-flex items-center gap-2">
+                                    <div class="inline-flex flex-wrap items-center justify-end gap-2">
+                                        @if ($canStart)
+                                            <form method="POST" action="{{ route('ticket.start', $ticket) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit"
+                                                    class="inline-flex items-center gap-1 h-[34px] px-3.5 rounded-lg bg-amber-50 text-tertiary font-label-sm text-label-sm font-semibold hover:bg-amber-100 transition-all">
+                                                    <span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                                                    <span>Mulai</span>
+                                                </button>
+                                            </form>
+                                        @elseif ($canComplete)
+                                            <form method="POST" action="{{ route('ticket.complete', $ticket) }}"
+                                                onsubmit="return confirm('Tandai tiket ini selesai?')">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit"
+                                                    class="inline-flex items-center gap-1 h-[34px] px-3.5 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:bg-primary-container transition-all">
+                                                    <span class="material-symbols-outlined text-[16px]">check</span>
+                                                    <span>Selesai</span>
+                                                </button>
+                                            </form>
+                                        @endif
+
                                         <button type="button" onclick="openTicketModal({{ $ticket->id }})"
                                             class="inline-flex items-center gap-1 h-[34px] px-3.5 rounded-lg bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold hover:bg-surface-container-high transition-all">
                                             <span>Detail</span>
                                             <span class="material-symbols-outlined text-[16px]">chevron_right</span>
                                         </button>
-                                        @if (auth()->user()->role === 'admin' || $ticket->user_id === auth()->id())
+
+                                        @if ($canEdit)
                                             <button type="button" onclick="openEditModal({{ $ticket->id }})"
                                                 class="inline-flex items-center gap-1 h-[34px] px-3.5 rounded-lg bg-primary/10 text-primary font-label-sm text-label-sm font-semibold hover:bg-primary/20 transition-all">
                                                 <span class="material-symbols-outlined text-[16px]">edit</span>
@@ -375,6 +435,8 @@
                             class="font-label-md text-label-md text-on-surface font-semibold leading-tight"></span>
                         <span id="modal-date" class="font-body-sm text-[11px] text-on-surface-variant"></span>
                     </div>
+                    <span id="modal-status"
+                        class="ml-auto px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-semibold"></span>
                 </div>
 
                 <div class="space-y-1.5">
@@ -485,7 +547,7 @@
     <script>
         const ticketsData = @json($ticketsData);
         const ticketUpdateBaseUrl = @json(url('/tickets'));
-        const MODAL_CLOSE_MS = 160; 
+        const MODAL_CLOSE_MS = 160;
 
         function showModal(el) {
             clearTimeout(el._closeTimer);
@@ -508,6 +570,7 @@
         const modalBackdrop = document.getElementById('ticket-modal-backdrop');
         const modalNumber = document.getElementById('modal-number');
         const modalTitle = document.getElementById('modal-title');
+        const modalStatus = document.getElementById('modal-status');
         const modalInitials = document.getElementById('modal-initials');
         const modalCreator = document.getElementById('modal-creator');
         const modalDate = document.getElementById('modal-date');
@@ -520,6 +583,7 @@
 
             modalNumber.textContent = '#' + ticket.number;
             modalTitle.textContent = ticket.title;
+            modalStatus.textContent = ticket.status;
             modalInitials.textContent = ticket.initials;
             modalCreator.textContent = ticket.creator;
             modalDate.textContent = ticket.createdAt;
