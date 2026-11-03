@@ -6,59 +6,66 @@ use App\Models\DailyActivity;
 use App\Models\Ticket;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DailyActivityController extends Controller
 {
     public function index(Request $request)
     {
         $date = $this->resolveDate($request);
+        $dayStart = $date->copy()->startOfDay();
+        $dayEnd = $date->copy()->endOfDay();
 
-        $completedOnDate = fn ($q) => $q
-            ->where('status', 'done')
-            ->whereDate('completed_at', $date);
+        $finishedOnDate = fn ($q) => $this->scopeFinishedOn($q, $dayStart, $dayEnd);
+        $loggedOnDate = fn ($q) => $q->whereDate('activity_date', $date->toDateString());
+
+        $search = trim((string) $request->input('search', ''));
+        $like = '%' . addcslashes($search, '%_\\') . '%';
 
         $students = User::query()
-            ->whereHas('tickets', $completedOnDate)
+            ->whereHas('tickets', $finishedOnDate)
             ->with([
-                'tickets' => fn ($q) => $completedOnDate($q)->orderBy('completed_at'),
-                'dailyActivities' => fn ($q) => $q->whereDate('activity_date', $date),
+                'tickets' => fn ($q) => $finishedOnDate($q)->orderBy('completed_at'),
+                'dailyActivities' => $loggedOnDate,
             ])
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $s = $request->search;
+            ->when($search !== '', function ($q) use ($like) {
                 $q->where(fn ($w) => $w
-                    ->where('name', 'like', "%{$s}%")
-                    ->orWhere('nim', 'like', "%{$s}%")
-                    ->orWhereHas('tickets', fn ($t) => $t->where('code', 'like', "%{$s}%")));
+                    ->where('name', 'like', $like)
+                    ->orWhere('nim', 'like', $like)
+                    ->orWhereHas('tickets', fn ($t) => $t->where('code', 'like', $like)));
             })
-            ->when($request->filled('division'), fn ($q) => $q->where('division', $request->division))
-            ->when($request->logbook === 'belum', fn ($q) => $q->whereDoesntHave(
-                'dailyActivities', fn ($a) => $a->whereDate('activity_date', $date)
-            ))
-            ->when($request->logbook === 'sudah', fn ($q) => $q->whereHas(
-                'dailyActivities', fn ($a) => $a->whereDate('activity_date', $date)
-            ))
+            ->when($request->filled('division'), fn ($q) => $q->where('division', $request->input('division')))
+            ->when($request->input('logbook') === 'belum', fn ($q) => $q->whereDoesntHave('dailyActivities', $loggedOnDate))
+            ->when($request->input('logbook') === 'sudah', fn ($q) => $q->whereHas('dailyActivities', $loggedOnDate))
             ->orderBy('name')
             ->paginate(5)
             ->withQueryString();
 
-        $students->getCollection()->each(function ($student) {
-            $start = $student->tickets->pluck('started_at')->filter()->map(fn ($d) => Carbon::parse($d))->min();
-            $end   = $student->tickets->pluck('completed_at')->filter()->map(fn ($d) => Carbon::parse($d))->max();
+        $students->getCollection()->each(function (User $student) {
+            $start = $student->tickets->pluck('started_at')->filter()->min();
+            $end = $student->tickets->pluck('completed_at')->filter()->max();
 
-            $student->work_start   = $start;
-            $student->work_end     = $end;
-            $student->work_minutes = ($start && $end) ? $start->diffInMinutes($end) : 0;
+            $student->work_start = $start;
+            $student->work_end = $end;
+            $student->work_minutes = ($start && $end)
+                ? (int) round($start->diffInMinutes($end, true))
+                : null;
         });
+
+        $today = today();
 
         return view('admin.DailyActivity.index', [
             'user'      => $request->user(),
             'date'      => $date,
             'prevDate'  => $date->copy()->subDay()->toDateString(),
-            'nextDate'  => $date->copy()->addDay()->toDateString(),
+            'nextDate'  => $date->lt($today) ? $date->copy()->addDay()->toDateString() : null,
+            'isToday'   => $date->isSameDay($today),
             'students'  => $students,
             'divisions' => User::whereNotNull('division')->distinct()->orderBy('division')->pluck('division'),
-            'stats'     => $this->stats($date),
+            'stats'     => $this->stats($dayStart, $dayEnd, $date),
         ]);
     }
 
@@ -66,71 +73,98 @@ class DailyActivityController extends Controller
     {
         $date = $this->resolveDate($request);
 
-        $tickets = Ticket::where('user_id', $user->id)
-            ->where('status', 'done')
-            ->whereDate('completed_at', $date)
+        $tickets = $this->scopeFinishedOn(
+                Ticket::query()->where('user_id', $user->id),
+                $date->copy()->startOfDay(),
+                $date->copy()->endOfDay()
+            )
             ->orderBy('completed_at')
             ->get();
 
         $activity = DailyActivity::where('user_id', $user->id)
-            ->whereDate('activity_date', $date)
+            ->whereDate('activity_date', $date->toDateString())
             ->first();
 
         return view('admin.DailyActivity.show', compact('user', 'date', 'tickets', 'activity'));
     }
 
-    public function store(Request $request, User $user)
+    public function store(Request $request, User $user): RedirectResponse
     {
         $data = $request->validate([
-            'activity_date' => ['required', 'date'],
+            'activity_date' => ['required', 'date', 'before_or_equal:today'],
             'description'   => ['required', 'string', 'max:5000'],
         ]);
 
+        $date = Carbon::parse($data['activity_date'])->startOfDay();
+
+        $hasFinishedTicket = $this->scopeFinishedOn(
+                Ticket::query()->where('user_id', $user->id),
+                $date->copy()->startOfDay(),
+                $date->copy()->endOfDay()
+            )->exists();
+
+        if (! $hasFinishedTicket) {
+            return back()
+                ->withErrors(['description' => 'Peserta belum memiliki tiket selesai pada tanggal ini.'])
+                ->withInput();
+        }
+
         DailyActivity::updateOrCreate(
-            ['user_id' => $user->id, 'activity_date' => $data['activity_date']],
+            ['user_id' => $user->id, 'activity_date' => $date->toDateString()],
             ['description' => $data['description']],
         );
 
         return redirect()
-            ->route('admin.daily-activity.show', [$user, 'date' => $data['activity_date']])
+            ->route('admin.daily-activity.show', [$user, 'date' => $date->toDateString()])
             ->with('success', 'Catatan harian disimpan.');
+    }
+
+    private function scopeFinishedOn($query, Carbon $start, Carbon $end)
+    {
+        return $query
+            ->whereIn('status', Ticket::FINISHED)
+            ->whereBetween('completed_at', [$start, $end]);
     }
 
     private function resolveDate(Request $request): Carbon
     {
         try {
-            return Carbon::parse($request->input('date', today()))->startOfDay();
+            $date = Carbon::parse($request->input('date', today()))->startOfDay();
         } catch (\Throwable) {
             return today();
         }
+
+        return $date->gt(today()) ? today() : $date;
     }
 
-    private function stats(Carbon $date): array
+    private function stats(Carbon $dayStart, Carbon $dayEnd, Carbon $date): array
     {
-        $tickets = Ticket::where('status', 'done')
-            ->whereDate('completed_at', $date)
-            ->get(['user_id', 'started_at', 'completed_at']);
+        $perUser = $this->scopeFinishedOn(Ticket::query(), $dayStart, $dayEnd)
+            ->groupBy('user_id')
+            ->get([
+                'user_id',
+                DB::raw('COUNT(*) as ticket_count'),
+                DB::raw('MIN(started_at) as first_start'),
+                DB::raw('MAX(completed_at) as last_end'),
+            ]);
 
-        $perUser = $tickets->groupBy('user_id');
+        $minutes = $perUser
+            ->filter(fn ($r) => $r->first_start && $r->last_end)
+            ->map(fn ($r) => max(0, Carbon::parse($r->first_start)->diffInMinutes(Carbon::parse($r->last_end), true)));
 
-        $avgMinutes = $perUser->map(function ($rows) {
-            $start = $rows->pluck('started_at')->filter()->map(fn ($d) => Carbon::parse($d))->min();
-            $end   = $rows->pluck('completed_at')->filter()->map(fn ($d) => Carbon::parse($d))->max();
+        $activeIds = $perUser->pluck('user_id');
 
-            return ($start && $end) ? $start->diffInMinutes($end) : null;
-        })->filter()->avg() ?? 0;
-
-        $logbookFilled = DailyActivity::whereDate('activity_date', $date)
-            ->whereIn('user_id', $perUser->keys())
+        $logbookFilled = DailyActivity::whereDate('activity_date', $date->toDateString())
+            ->whereIn('user_id', $activeIds)
             ->count();
 
         return [
             'total_students'  => User::whereNotNull('nim')->count(),
-            'active_students' => $perUser->count(),
-            'total_tickets'   => $tickets->count(),
-            'avg_hours'       => round($avgMinutes / 60, 1),
+            'active_students' => $activeIds->count(),
+            'total_tickets'   => (int) $perUser->sum('ticket_count'),
+            'avg_hours'       => round(($minutes->avg() ?? 0) / 60, 1),
             'logbook_filled'  => $logbookFilled,
-            'logbook_missing' => $perUser->count() - $logbookFilled,
+            'logbook_missing' => $activeIds->count() - $logbookFilled,
         ];
     }
 }

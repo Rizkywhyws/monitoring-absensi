@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -13,42 +14,54 @@
         rel="stylesheet" />
     <style>
         @layer base {
+
             html,
             body {
                 margin: 0;
                 padding: 0;
             }
+
             body {
                 overscroll-behavior: none;
             }
+
             main>:first-child {
                 margin-top: 0 !important;
             }
+
             main>:last-child {
                 margin-bottom: 0 !important;
             }
         }
+
         ::-webkit-scrollbar {
             display: none;
         }
+
         .sidebar-backdrop {
             display: none;
         }
+
         .sidebar-backdrop.is-open {
             display: block;
         }
+
         #logoutModal.is-open {
             animation: modalFadeIn .18s ease-out both;
         }
+
         #logoutModal.is-open #logoutCard {
             animation: modalCardIn .22s cubic-bezier(.22, 1, .36, 1) both;
         }
+
         #logoutModal.is-leaving {
             animation: modalFadeOut .14s ease-in both;
         }
+
         #logoutModal.is-leaving #logoutCard {
             animation: modalCardOut .14s ease-in both;
         }
+
         @keyframes modalFadeIn {
             from {
                 opacity: 0;
@@ -58,6 +71,7 @@
                 opacity: 1;
             }
         }
+
         @keyframes modalFadeOut {
             from {
                 opacity: 1;
@@ -67,6 +81,7 @@
                 opacity: 0;
             }
         }
+
         @keyframes modalCardIn {
             from {
                 opacity: 0;
@@ -78,32 +93,39 @@
                 transform: translateY(0) scale(1);
             }
         }
+
         @keyframes modalCardOut {
             from {
                 opacity: 1;
                 transform: translateY(0) scale(1);
             }
+
             to {
                 opacity: 0;
                 transform: translateY(5px) scale(.985);
             }
         }
+
         .lo-ring,
         .lo-check {
             stroke-dasharray: 1;
             stroke-dashoffset: 1;
         }
+
         #logoutModal.is-open .lo-ring {
             animation: lo-draw .28s ease-out .08s forwards;
         }
+
         #logoutModal.is-open .lo-check {
             animation: lo-draw .22s ease-out .25s forwards;
         }
+
         @keyframes lo-draw {
             to {
                 stroke-dashoffset: 0;
             }
         }
+
         .lo-halo {
             opacity: 0;
         }
@@ -111,6 +133,7 @@
         #logoutModal.is-open .lo-halo {
             animation: lo-halo .5s ease-out .18s both;
         }
+
         @keyframes lo-halo {
             from {
                 transform: scale(.9);
@@ -122,65 +145,82 @@
                 opacity: 0;
             }
         }
+
         .lo-up {
             opacity: 0;
         }
+
         #logoutModal.is-open .lo-up {
             animation: lo-up .2s ease-out .18s forwards;
         }
+
         @keyframes lo-up {
             from {
                 opacity: 0;
                 transform: translateY(4px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
+
         #logoutBar {
             width: 0;
         }
+
         #logoutModal.is-open #logoutBar {
             animation: lo-bar .65s cubic-bezier(.4, 0, .2, 1) .08s forwards;
         }
+
         @keyframes lo-bar {
             to {
                 width: 100%;
             }
         }
+
         .pp-modal.is-open {
             animation: modalFadeIn .18s ease-out both;
         }
+
         .pp-modal.is-open .pp-card {
             animation: modalCardIn .2s cubic-bezier(.22, 1, .36, 1) both;
         }
+
         .pp-modal.is-leaving {
             animation: modalFadeOut .14s ease-in both;
         }
+
         .pp-modal.is-leaving .pp-card {
             animation: modalCardOut .14s ease-in both;
         }
+
         .pp-ring,
         .pp-check,
         .pp-mark {
             stroke-dasharray: 1;
             stroke-dashoffset: 1;
         }
+
         .pp-modal.is-open .pp-ring {
             animation: lo-draw .25s ease-out .06s forwards;
         }
+
         .pp-modal.is-open .pp-check,
         .pp-modal.is-open .pp-mark {
             animation: lo-draw .2s ease-out .18s forwards;
         }
+
         .pp-bar {
             transform-origin: left center;
             will-change: transform;
         }
+
         #popupModal.is-open .pp-bar {
             animation: pp-bar var(--pp-duration, 700ms) linear forwards;
         }
+
         @keyframes pp-bar {
             from {
                 transform: scaleX(1);
@@ -192,6 +232,7 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
+
             *,
             *::before,
             *::after {
@@ -200,6 +241,7 @@
                 transition-duration: .01ms !important;
             }
         }
+
         @media (max-width: 900px) {
             .app-sidebar {
                 position: fixed;
@@ -410,28 +452,17 @@
             ->map(fn($w) => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($w, 0, 1)))
             ->implode('');
 
-        // Grup menu yang terbuka otomatis saat halaman terkait sedang dibuka
         $ticketGroupOpen = request()->routeIs('tickets', 'ticket.*');
         $absensiGroupOpen = request()->routeIs('absensi', 'absensi.*');
-
-        // Dropdown Absensi (admin): Riwayat Absensi + Izin & Sakit
         $adminAbsensiOpen = request()->routeIs('admin.riwayat-absensi*', 'admin.izin*');
-
-        // Jumlah pengajuan izin/sakit yang menunggu persetujuan (badge, hanya admin)
-        $pendingLeaves = $isAdmin
-            ? \App\Models\LeaveRequest::where('status', 'pending')->count()
-            : 0;
-
-        // Link "Riwayat Absensi" jatuh ke '#' selama route absensi.riwayat belum dibuat
-        $riwayatAbsensiUrl = \Illuminate\Support\Facades\Route::has('absensi.riwayat')
-            ? route('absensi.riwayat')
-            : '#';
+        $pendingLeaves = $isAdmin ? \App\Models\LeaveRequest::where('status', 'pending')->count() : 0;
+        $riwayatAbsensiUrl = \Illuminate\Support\Facades\Route::has('absensi.riwayat') ? route('absensi.riwayat') : '#';
 
         $adminMenu = [
             ['admin.dashboard', 'Dashboard', 'grid_view'],
             ['admin.daftar-user', 'User', 'group'],
             ['admin.riwayat-absensi', 'Absensi', 'co_present'],
-            ['admin.tickets', 'Ticket', 'confirmation_number'],
+            ['admin.tickets.index', 'Ticket', 'confirmation_number'],
             ['admin.daily-activity.index', 'Daily Activity', 'event_note'],
             ['admin.laporan', 'Laporan', 'assessment'],
             ['admin.notifikasi', 'Notifikasi', 'notifications', 3],
@@ -526,7 +557,8 @@
                             $active = request()->routeIs(\Illuminate\Support\Str::beforeLast($m[0], '.index') . '*');
                             $href = \Illuminate\Support\Facades\Route::has($m[0]) ? route($m[0]) : '#';
                         @endphp
-                        <a href="{{ $href }}" class="{{ $navBase }} {{ $active ? $navActive : $navIdle }}"
+                        <a href="{{ $href }}"
+                            class="{{ $navBase }} {{ $active ? $navActive : $navIdle }}"
                             @if ($active) aria-current="page" @endif>
 
                             <div class="flex items-center gap-space-sm">
@@ -885,6 +917,7 @@
                 '(prefers-reduced-motion: reduce)'
             ).matches;
             let loggingOut = false;
+
             function toggleSidebar() {
                 sidebar?.classList.toggle('is-open');
                 backdrop?.classList.toggle('is-open');
@@ -905,6 +938,7 @@
                         ?.classList.toggle('rotate-180', isOpen);
                 });
             });
+
             function setProfileMenu(open) {
                 if (!profileDropdown || !profileBtn) return;
                 profileDropdown.classList.toggle('hidden', !open);
@@ -928,6 +962,7 @@
                     setProfileMenu(false);
                 }
             });
+
             function showLogoutModal(redirectUrl) {
                 if (!logoutModal) {
                     window.location.href = redirectUrl;
@@ -1001,6 +1036,7 @@
             const barWrap = document.getElementById('popupBarWrap');
             let popupTimer = null;
             let pendingForm = null;
+
             function openModal(el) {
                 if (!el) return;
                 clearTimeout(el._closeTimer);
@@ -1011,6 +1047,7 @@
                 );
                 el.classList.add('is-open');
             }
+
             function closeModal(el, after = null) {
                 if (!el || el.classList.contains('hidden')) {
                     if (typeof after === 'function') {

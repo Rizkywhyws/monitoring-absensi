@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-
-use Illuminate\Support\Facades\Storage;
-use App\Http\Requests\UpdateTicketRequest;
 use App\Http\Requests\StoreTicketRequest;
+use App\Http\Requests\UpdateTicketRequest;
 use App\Models\Ticket;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class TicketController extends Controller
@@ -73,14 +73,7 @@ class TicketController extends Controller
                 'ticket_number' => sprintf('TKT-%05d', $ticket->id),
             ]);
 
-            foreach ($request->file('attachments', []) as $file) {
-                $ticket->attachments()->create([
-                    'file_name' => Str::limit($file->getClientOriginalName(), 255, ''),
-                    'file_type' => $file->getClientMimeType(),
-                    'file_size' => $file->getSize(),
-                    'file_path' => $file->store('ticket-attachments', 'public'),
-                ]);
-            }
+            $this->storeAttachments($request, $ticket);
 
             return $ticket;
         });
@@ -117,42 +110,89 @@ class TicketController extends Controller
 
         return view('user.detailTicket', compact('ticket') + $this->layoutData($request));
     }
+
     public function update(UpdateTicketRequest $request, Ticket $ticket)
     {
-        abort_unless(
-            $request->user()->role === 'admin' || $ticket->user_id === $request->user()->id,
-            403
-        );
+        $isAdmin = $request->user()->role === 'admin';
+
+        abort_unless($isAdmin || $ticket->user_id === $request->user()->id, 403);
+
+        if (! $isAdmin && in_array($ticket->status, Ticket::FINISHED, true)) {
+            return back()->withErrors(['status' => 'Tiket yang sudah selesai tidak bisa diedit.']);
+        }
 
         $data = $request->validated();
+        $pathsToDelete = [];
 
-        DB::transaction(function () use ($request, $ticket, $data) {
+        DB::transaction(function () use ($request, $ticket, $data, &$pathsToDelete) {
             $ticket->update([
                 'title' => $data['title'],
                 'description' => $data['description'],
             ]);
 
             $removeIds = $data['remove_attachments'] ?? [];
-            if (!empty($removeIds)) {
+            if (! empty($removeIds)) {
                 $toRemove = $ticket->attachments()->whereIn('id', $removeIds)->get();
                 foreach ($toRemove as $attachment) {
-                    Storage::disk('public')->delete($attachment->file_path);
+                    $pathsToDelete[] = $attachment->file_path;
                     $attachment->delete();
                 }
             }
 
-            foreach ($request->file('attachments', []) as $file) {
-                $ticket->attachments()->create([
-                    'file_name' => Str::limit($file->getClientOriginalName(), 255, ''),
-                    'file_type' => $file->getClientMimeType(),
-                    'file_size' => $file->getSize(),
-                    'file_path' => $file->store('ticket-attachments', 'public'),
-                ]);
-            }
+            $this->storeAttachments($request, $ticket);
         });
+
+        foreach ($pathsToDelete as $path) {
+            Storage::disk('public')->delete($path);
+        }
 
         return redirect()
             ->route('tickets')
             ->with('success', "Tiket #{$ticket->ticket_number} berhasil diperbarui.");
+    }
+
+
+    public function start(Request $request, Ticket $ticket): RedirectResponse
+    {
+        $affected = Ticket::query()
+            ->whereKey($ticket->id)
+            ->where('user_id', $request->user()->id)
+            ->whereIn('status', ['to_do', 'hold', 'revision'])
+            ->update([
+                'status'     => 'on_progress',
+                'started_at' => $ticket->started_at ?? now(),
+            ]);
+
+        return $affected
+            ? back()->with('success', "Tiket #{$ticket->ticket_number} dimulai.")
+            : back()->withErrors(['status' => 'Tiket tidak bisa dimulai dari status saat ini.']);
+    }
+
+    public function complete(Request $request, Ticket $ticket): RedirectResponse
+    {
+        $affected = Ticket::query()
+            ->whereKey($ticket->id)
+            ->where('user_id', $request->user()->id)
+            ->where('status', 'on_progress')
+            ->update([
+                'status'       => 'done',
+                'completed_at' => now(),
+            ]);
+
+        return $affected
+            ? back()->with('success', "Tiket #{$ticket->ticket_number} selesai dan masuk Daily Activity.")
+            : back()->withErrors(['status' => 'Mulai tiket terlebih dahulu sebelum menyelesaikannya.']);
+    }
+
+    private function storeAttachments(Request $request, Ticket $ticket): void
+    {
+        foreach ($request->file('attachments', []) as $file) {
+            $ticket->attachments()->create([
+                'file_name' => Str::limit($file->getClientOriginalName(), 255, ''),
+                'file_type' => $file->getClientMimeType(),
+                'file_size' => $file->getSize(),
+                'file_path' => $file->store('ticket-attachments', 'public'),
+            ]);
+        }
     }
 }
