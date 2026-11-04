@@ -23,7 +23,6 @@ class Ticket extends Model
         'title',
         'description',
         'category',
-        'priority',
         'status',
         'started_at',
         'completed_at',

@@ -51,12 +51,9 @@ class DailyActivitySeeder extends Seeder
         $now = now();
 
         $statusEnum   = $this->enumValues('tickets', 'status');
-        $priorityEnum = $this->enumValues('tickets', 'priority');
         $categoryEnum = $this->enumValues('tickets', 'category');
 
         $statusDone   = $this->pick($statusEnum, ['completed', 'selesai', 'done', 'closed', 'verified'], 'tickets.status');
-        $priorityHigh = $this->pick($priorityEnum, ['high', 'tinggi', 'urgent'], 'tickets.priority');
-        $priorityNorm = $this->pick($priorityEnum, ['normal', 'medium', 'sedang', 'low', 'rendah'], 'tickets.priority');
         $category     = $categoryEnum[0] ?? 'Instalasi';
 
         $this->command?->info("Status selesai yang dipakai: {$statusDone}");
@@ -96,20 +93,21 @@ class DailyActivitySeeder extends Seeder
 
         $catalog = [
             'Install & Aktivasi' => [
-                ['Splicing ODP-JBR-042', $priorityHigh],
-                ['Pengukuran Redaman OPM', $priorityNorm],
-                ['Instalasi ONT Pelanggan', $priorityNorm],
-                ['Troubleshooting Redaman Tinggi', $priorityNorm],
+                ['Splicing ODP-JBR-042'],
+                ['Pengukuran Redaman OPM'],
+                ['Instalasi ONT Pelanggan'],
+                ['Troubleshooting Redaman Tinggi'],
+                ['Pemasangan Kabel Dropcore'],                                                  
             ],
             'PM OSP' => [
-                ['Penarikan Dropcore 150m', $priorityNorm],
-                ['Pemasangan Tiang Baru', $priorityHigh],
-                ['Survey Rute Kabel', $priorityNorm],
+                ['Penarikan Dropcore 150m', ],
+                ['Pemasangan Tiang Baru', ],
+                ['Survey Rute Kabel', ],
             ],
             'IT Support' => [
-                ['Patchcord & Cek Router Gandul', $priorityNorm],
-                ['Konfigurasi Switch Lantai 2', $priorityHigh],
-                ['Maintenance Server Harian', $priorityNorm],
+                ['Patchcord & Cek Router Gandul'],
+                ['Konfigurasi Switch Lantai 2'],
+                ['Maintenance Server Harian'],
             ],
         ];
 
@@ -176,8 +174,6 @@ class DailyActivitySeeder extends Seeder
             }
         }
 
-        // 6. Tiket contoh untuk AKUN PESERTA ASLI (non-dummy), supaya Anda bisa login sendiri.
-        //    Kode tiketnya diawali DMY-. Logbook sengaja tidak dibuat: isi sendiri lewat halaman Daily Activity peserta.
         $realUsers = DB::table('users')
             ->where(fn ($q) => $q->where('role', '!=', 'admin')->orWhereNull('role'))
             ->where('email', 'not like', '%@dummy.test')
@@ -189,7 +185,7 @@ class DailyActivitySeeder extends Seeder
         foreach ($realUsers as $uid) {
             foreach (range(0, 4) as $daysAgo) {
                 $slot  = $now->copy()->subDays($daysAgo)->startOfDay()->setTime(8, 10);
-                $total = ($daysAgo % 3) + 1; // 1-3 tiket per hari
+                $total = ($daysAgo % 3) + 1; 
 
                 for ($k = 0; $k < $total; $k++) {
                     [$title, $priority] = $demoItems[($daysAgo + $k) % count($demoItems)];

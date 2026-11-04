@@ -444,6 +444,7 @@
         $authUser = auth()->user();
         $isAdmin = $authUser?->role === 'admin';
         $userName = $authUser?->name ?? 'Pengguna';
+        $authFoto = auth()->user()?->foto ? asset('storage/' . auth()->user()->foto) : null;
 
         $userInitials = \Illuminate\Support\Str::of($userName)
             ->explode(' ')
@@ -727,10 +728,14 @@
                     <button type="button" id="profileBtn" aria-haspopup="true" aria-expanded="false"
                         aria-controls="profileDropdown" aria-label="Menu profil"
                         class="flex items-center gap-space-xs rounded-full pl-1 pr-space-xs py-1 hover:bg-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors">
-                        <span class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                            <span class="font-label-md text-label-md text-on-primary font-bold">
-                                {{ $userInitials }}
-                            </span>
+                        <span class="w-8 h-8 rounded-full bg-primary flex items-center justify-center overflow-hidden">
+                            @if ($authFoto)
+                                <img src="{{ $authFoto }}" alt="" class="w-full h-full object-cover">
+                            @else
+                                <span class="font-label-md text-label-md text-on-primary font-bold">
+                                    {{ $userInitials }}
+                                </span>
+                            @endif
                         </span>
                         <span
                             class="hidden md:inline max-w-[140px] truncate font-label-md text-label-md text-on-surface font-semibold">

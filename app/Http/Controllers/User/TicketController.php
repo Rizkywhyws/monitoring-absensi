@@ -65,7 +65,6 @@ class TicketController extends Controller
                 'title' => $data['title'],
                 'description' => $data['description'],
                 'category' => 'Umum',
-                'priority' => 'medium',
                 'status' => 'to_do',
             ]);
 

@@ -133,10 +133,6 @@
                                             <li>
                                                 <span
                                                     class="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold">{{ $ticket->code ?: $ticket->ticket_number }}</span>
-                                                @if (in_array(strtolower((string) $ticket->priority), ['high', 'tinggi', 'urgent'], true))
-                                                    <span
-                                                        class="ml-1 rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">High</span>
-                                                @endif
                                                 <p class="mt-0.5 text-slate-700">{{ $ticket->title }}</p>
                                             </li>
                                         @endforeach

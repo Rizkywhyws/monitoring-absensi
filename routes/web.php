@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\TicketAdminController;
+use App\Http\Controllers\User\ProfileController;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -150,9 +151,10 @@ Route::middleware('auth')->group(function () {
             'userName'        => $user->name,
             'nim'             => $user->nim,
             'periodeMagang'   => ($mulai && $selesai) ? "$mulai – $selesai" : '-',
-            'divisi'          => $user->group?->name ?? '-',
-            'pembimbing'      => $user->mentor ?? '-',
-            'kampus'          => $user->asal_universitas ?? '-',
+            'divisi'          => $user->group?->name ?: ($user->division ?: '-'),
+            'pembimbing'      => $user->mentor ?: '-',
+            'kampus'          => $user->asal_universitas ?: ($user->university ?: '-'),
+            'fotoUrl'         => $user->foto ? asset('storage/' . $user->foto) : null,
             'riwayatAbsensi'  => $riwayatAbsensi,
             'totalTiket'      => $totalTiket,
             'tiketSelesai'    => $tiketSelesai,
@@ -199,5 +201,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/daily-activity', [UserDailyActivityController::class, 'index'])->name('daily-activity.index');
     Route::post('/daily-activity', [UserDailyActivityController::class, 'store'])->name('daily-activity.store');
 
+    Route::get('/profil', [ProfileController::class, 'show'])->name('profil');
+    Route::put('/profil', [ProfileController::class, 'update'])->name('profil.update');
+    Route::put('/profil/password', [ProfileController::class, 'updatePassword'])->name('profil.password');
+    Route::post('/profil/foto', [ProfileController::class, 'updatePhoto'])->name('profil.foto');
+    Route::delete('/profil/foto', [ProfileController::class, 'destroyPhoto'])->name('profil.foto.hapus');
     Route::get('/user', fn() => view('user.index'))->name('user.index');
 });
