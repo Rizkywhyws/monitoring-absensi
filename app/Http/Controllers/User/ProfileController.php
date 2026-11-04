@@ -52,8 +52,6 @@ class ProfileController extends Controller
             'no_hp.regex'   => 'Nomor HP hanya boleh berisi angka, spasi, tanda + atau -.',
         ]);
 
-        // forceFill: tidak perlu mengubah $fillable di model User.
-        // Aman karena hanya field yang sudah divalidasi di atas yang ikut disimpan.
         $request->user()->forceFill($data)->save();
 
         return redirect()

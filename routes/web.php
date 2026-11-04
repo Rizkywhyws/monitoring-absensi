@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\TicketAdminController;
+use App\Http\Controllers\User\ProfileController;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -150,9 +151,10 @@ Route::middleware('auth')->group(function () {
             'userName'        => $user->name,
             'nim'             => $user->nim,
             'periodeMagang'   => ($mulai && $selesai) ? "$mulai – $selesai" : '-',
-            'divisi'          => $user->group?->name ?? '-',
-            'pembimbing'      => $user->mentor ?? '-',
-            'kampus'          => $user->asal_universitas ?? '-',
+            'divisi'          => $user->group?->name ?: ($user->division ?: '-'),
+            'pembimbing'      => $user->mentor ?: '-',
+            'kampus'          => $user->asal_universitas ?: ($user->university ?: '-'),
+            'fotoUrl'         => $user->foto ? asset('storage/' . $user->foto) : null,
             'riwayatAbsensi'  => $riwayatAbsensi,
             'totalTiket'      => $totalTiket,
             'tiketSelesai'    => $tiketSelesai,

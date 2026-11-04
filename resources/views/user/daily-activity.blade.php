@@ -103,18 +103,12 @@
             </div>
 
             @forelse ($tickets as $ticket)
-                @php
-                    $isHigh = in_array(strtolower((string) $ticket->priority), ['high', 'tinggi', 'urgent'], true);
-                @endphp
                 <div class="flex items-start justify-between gap-space-md border-t border-surface-container px-space-lg py-space-md first:border-t-0">
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-space-xs">
                             <span class="rounded bg-surface-container px-1.5 py-0.5 font-label-md text-label-md text-on-surface">
                                 {{ $ticket->code ?: $ticket->ticket_number }}
                             </span>
-                            @if ($isHigh)
-                                <span class="rounded bg-error-container px-1.5 py-0.5 font-label-md text-label-md text-on-error-container">High</span>
-                            @endif
                             @if ($ticket->category)
                                 <span class="font-body-sm text-body-sm text-on-surface-variant">{{ $ticket->category }}</span>
                             @endif
