@@ -21,21 +21,25 @@
         $totalSakit = $totalSakit ?? 0;
         $totalIzin = $totalIzin ?? 0;
         $totalTidakHadir = $totalTidakHadir ?? $totalAlpha + $totalSakit + $totalIzin;
+
+        // Foto & inisial (fallback jika controller tidak mengirim)
         $fotoUrl = $fotoUrl ?? null;
-        $initials = \Illuminate\Support\Str::of($userName ?? 'Peserta')
-            ->explode(' ')
-            ->filter()
-            ->take(2)
-            ->map(fn($w) => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($w, 0, 1)))
-            ->implode('');
+        $initials =
+            $initials ??
+            collect(explode(' ', trim($userName ?? 'Peserta')))
+                ->filter()
+                ->take(2)
+                ->map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)))
+                ->implode('');
     @endphp
     <div class="flex flex-col w-full gap-space-lg">
+        {{-- ================= Header Selamat Datang ================= --}}
         <section
             class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
             <div class="flex flex-col gap-space-2xs">
                 <div class="flex items-center gap-space-xs">
                     <span class="font-label-sm text-label-sm uppercase tracking-widest text-primary font-bold">Ringkasan
-                        Mahasiswa PKL</span>
+                        Peserta PKL</span>
                     <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
                     <span
                         class="font-label-sm text-label-sm text-on-surface-variant font-medium">{{ $kampus ?? 'PLN Icon Plus KP Jember' }}</span>
@@ -50,6 +54,8 @@
                 </p>
             </div>
         </section>
+
+        {{-- ================= Identitas Peserta + Presensi Hari Ini ================= --}}
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-space-md">
             <div
                 class="lg:col-span-7 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between gap-space-md">

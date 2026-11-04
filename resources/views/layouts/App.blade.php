@@ -462,11 +462,8 @@
         $adminMenu = [
             ['admin.dashboard', 'Dashboard', 'grid_view'],
             ['admin.daftar-user', 'User', 'group'],
-            ['admin.riwayat-absensi', 'Absensi', 'co_present'],
-            ['admin.tickets.index', 'Ticket', 'confirmation_number'],
+            ['admin.riwayat-absensi', 'Riwayat Absensi', 'co_present'],
             ['admin.daily-activity.index', 'Daily Activity', 'event_note'],
-            ['admin.laporan', 'Laporan', 'assessment'],
-            ['admin.notifikasi', 'Notifikasi', 'notifications', 3],
             ['admin.profil', 'Profil', 'manage_accounts'],
         ];
 
@@ -669,24 +666,9 @@
                             <span>Daily Activity</span>
                         </div>
                     </a>
-
-                    {{-- Notifikasi --}}
-                    <a class="{{ $navBase }} {{ $navIdle }}" href="#">
-                        <div class="flex items-center gap-space-sm">
-                            <span class="material-symbols-outlined text-[20px]">
-                                notifications
-                            </span>
-
-                            <span>Notifikasi</span>
-                        </div>
-                        <span
-                            class="px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
-                            3
-                        </span>
-                    </a>
-
-                    {{-- Profil --}}
-                    <a class="{{ $navBase }} {{ $navIdle }}" href="{{ $profileUrl ?? '#' }}">
+                                        <a class="{{ $navBase }} {{ request()->routeIs('profil*') ? $navActive : $navIdle }}"
+                        href="{{ $profileUrl ?? '#' }}"
+                        @if (request()->routeIs('profil*')) aria-current="page" @endif>
                         <div class="flex items-center gap-space-sm">
                             <span class="material-symbols-outlined text-[20px]">
                                 person

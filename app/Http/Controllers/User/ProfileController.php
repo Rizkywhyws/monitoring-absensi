@@ -3,143 +3,59 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\Attendance;
-use App\Models\Ticket;
-use Illuminate\Http\RedirectResponse;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rules\Password;
-use Illuminate\View\View;
+use Illuminate\Validation\Rule;
 
+/**
+ * Profil PESERTA: menampilkan data resmi (read-only) dan mengedit data pribadi (teks).
+ */
 class ProfileController extends Controller
 {
-    public function show(Request $request): View
+    public function show(Request $request)
     {
-        $user = $request->user()->load('group:id,name');
+        $user = $request->user()->load('group');
 
-        $start = $user->periode_mulai?->copy()->startOfDay();
-        $end   = $user->periode_selesai?->copy()->startOfDay();
-        $today = today();
+        $fmt = fn ($d) => $d ? Carbon::parse($d)->translatedFormat('d M Y') : null;
 
-        $program   = null;
-        $kehadiran = null;
-        $hadir     = 0;
+        $mulai   = $fmt($user->periode_mulai);
+        $selesai = $fmt($user->periode_selesai);
 
-        if ($start && $end && $end->gte($start)) {
-            $total   = (int) $start->diffInDays($end) + 1;
-            $elapsed = $today->lt($start) ? 0 : min($total, (int) $start->diffInDays($today) + 1);
+        // Data yang diatur admin: hanya ditampilkan
+        $official = [
+            'Email'               => $user->email,
+            'Periode PKL'         => ($mulai && $selesai) ? "{$mulai} – {$selesai}" : null,
+            'Divisi / Kelompok'   => $user->group?->name,
+            'Pembimbing lapangan' => $user->mentor,
+        ];
 
-            $program = [
-                'total'     => $total,
-                'elapsed'   => $elapsed,
-                'remaining' => $total - $elapsed,
-                'percent'   => (int) round($elapsed / $total * 100),
-            ];
+        return view('user.profil', compact('user', 'official'));
+    }
 
-            $until     = $today->lt($end) ? $today : $end;
-            $hariKerja = 0;
-
-            if ($until->gte($start)) {
-                for ($d = $start->copy(); $d->lte($until); $d->addDay()) {
-                    if ($d->isWeekday()) {
-                        $hariKerja++;
-                    }
-                }
-
-                $hadir = Attendance::where('user_id', $user->id)
-                    ->whereBetween('attendance_date', [$start->toDateString(), $until->toDateString()])
-                    ->whereNotNull('check_in')
-                    ->count();
-            }
-
-            $kehadiran = $hariKerja > 0 ? min(100, (int) round($hadir / $hariKerja * 100)) : null;
-        }
-
-        $tiket = Ticket::where('user_id', $user->id)
-            ->selectRaw("COUNT(*) AS total,
-                         COALESCE(SUM(status IN ('done','verified')), 0) AS selesai,
-                         COALESCE(SUM(status = 'verified'), 0) AS verified")
-            ->first();
-
-        return view('user.profileUser', [
-            'user'      => $user,
-            'program'   => $program,
-            'kehadiran' => $kehadiran,
-            'hadir'     => $hadir,
-            'tiket'     => [
-                'total'    => (int) ($tiket->total ?? 0),
-                'selesai'  => (int) ($tiket->selesai ?? 0),
-                'verified' => (int) ($tiket->verified ?? 0),
+    public function update(Request $request)
+    {
+        $data = $request->validate([
+            'name'             => ['required', 'string', 'max:100'],
+            'nim'              => [
+                'required', 'string', 'max:30', 'regex:/^[A-Za-z0-9]+$/',
+                Rule::unique('users', 'nim')->ignore($request->user()->id),
             ],
-            'ip'        => $request->ip(),
-        ]);
-    }
-
-    public function update(Request $request): RedirectResponse
-    {
-        $data = $request->validateWithBag('profile', [
-            'nomor_telepon' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]{6,20}$/'],
-            'email_pribadi' => ['nullable', 'email:rfc', 'max:150'],
-        ]);
-
-        $request->user()->forceFill([
-            'nomor_telepon' => $data['nomor_telepon'] ?? null,
-            'email_pribadi' => $data['email_pribadi'] ?? null,
-        ])->save();
-
-        return redirect()->route('profil')->with('success', 'Profil berhasil diperbarui.');
-    }
-
-    public function updatePassword(Request $request): RedirectResponse
-    {
-        $request->validateWithBag('password', [
-            'current_password' => ['required', 'current_password'],
-            'password'         => ['required', 'confirmed', Password::min(8)],
-        ]);
-
-        $request->user()->forceFill([
-            'password' => Hash::make($request->input('password')),
-        ])->save();
-
-        return redirect()->route('profil')->with('success', 'Password berhasil diubah.');
-    }
-
-    public function updatePhoto(Request $request): RedirectResponse
-    {
-        $request->validateWithBag('photo', [
-            'foto' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'asal_universitas' => ['nullable', 'string', 'max:150'],
+            'jurusan'          => ['nullable', 'string', 'max:100'],
+            'no_hp'            => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]{8,20}$/'],
+            'alamat'           => ['nullable', 'string', 'max:500'],
         ], [
-            'foto.required' => 'Pilih foto terlebih dahulu.',
-            'foto.image'    => 'File harus berupa gambar.',
-            'foto.mimes'    => 'Format foto harus JPG, PNG, atau WebP.',
-            'foto.max'      => 'Ukuran foto maksimal 2 MB.',
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'nim.required'  => 'NIM / NISN wajib diisi.',
+            'nim.regex'     => 'NIM / NISN hanya boleh berisi huruf dan angka, tanpa spasi.',
+            'nim.unique'    => 'NIM / NISN ini sudah dipakai peserta lain.',
+            'no_hp.regex'   => 'Nomor HP hanya boleh berisi angka, spasi, tanda + atau -.',
         ]);
 
-        $user    = $request->user();
-        $oldPath = $user->foto;
-        $newPath = $request->file('foto')->store('profile-photos', 'public');
+        $request->user()->forceFill($data)->save();
 
-        $user->forceFill(['foto' => $newPath])->save();
-
-        if ($oldPath) {
-            Storage::disk('public')->delete($oldPath);
-        }
-
-        return redirect()->route('profil')->with('success', 'Foto profil berhasil diperbarui.');
-    }
-
-    public function destroyPhoto(Request $request): RedirectResponse
-    {
-        $user    = $request->user();
-        $oldPath = $user->foto;
-
-        $user->forceFill(['foto' => null])->save();
-
-        if ($oldPath) {
-            Storage::disk('public')->delete($oldPath);
-        }
-
-        return redirect()->route('profil')->with('success', 'Foto profil dihapus.');
+        return redirect()
+            ->route('profil')
+            ->with('success', 'Profil berhasil diperbarui.');
     }
 }
