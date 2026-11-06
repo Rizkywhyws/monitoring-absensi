@@ -17,6 +17,8 @@ class AttendanceController extends Controller
     private const LATE_AFTER = '08:15:00';
     private const MAX_ACCURACY_METERS = 100;
     private const MAX_PHOTO_BYTES = 2097152;
+    private const PHOTO_MAX_WIDTH = 800;  
+    private const PHOTO_QUALITY   = 70;   
 
     private const MONTHS = [
         1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -82,11 +84,7 @@ class AttendanceController extends Controller
 
         $monthQuery = Attendance::where('user_id', $user->id)
             ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()]);
-
-        // Ringkasan bulan terpilih (tidak terpengaruh filter status)
         $monthRecords = (clone $monthQuery)->get(['id', 'attendance_date', 'check_in', 'check_out', 'status']);
-
-        // Rata-rata durasi hanya dari hari hadir/telat yang sudah check-out
         $completed = $monthRecords->filter(
             fn ($a) => in_array($a->status, ['hadir', 'telat'], true) && $a->check_in && $a->check_out
         );
@@ -101,8 +99,6 @@ class AttendanceController extends Controller
         $sakit = $monthRecords->where('status', 'sakit')->count();
         $izin  = $monthRecords->where('status', 'izin')->count();
 
-        // ---------- Alpha: hari kerja lampau tanpa catatan apa pun ----------
-        // Dihitung dari mulai periode PKL (atau absensi pertama jika periode kosong).
         $firstDate = Attendance::where('user_id', $user->id)->min('attendance_date');
         $joinedAt  = $user->periode_mulai
             ? $user->periode_mulai->copy()->startOfDay()
@@ -119,7 +115,7 @@ class AttendanceController extends Controller
             $to = $end->copy()->startOfDay();
             $yesterday = today()->subDay();
             if ($to->gt($yesterday)) {
-                $to = $yesterday;            // hari ini masih bisa check-in
+                $to = $yesterday;           
             }
             if ($user->periode_selesai && $user->periode_selesai->copy()->startOfDay()->lt($to)) {
                 $to = $user->periode_selesai->copy()->startOfDay();
@@ -137,7 +133,7 @@ class AttendanceController extends Controller
         }
 
         $summary = [
-            'total'       => $hadir + $telat,   // sakit/izin tidak dihitung sebagai hadir
+            'total'       => $hadir + $telat,   
             'hadir'       => $hadir,
             'telat'       => $telat,
             'sakit'       => $sakit,
@@ -146,7 +142,6 @@ class AttendanceController extends Controller
             'avg_minutes' => $avgMinutes,
         ];
 
-        // Alpha tidak punya baris di tabel, jadi tidak difilter lewat kolom status
         $attendances = (clone $monthQuery)
             ->when($status && $status !== 'alpha', fn ($q) => $q->where('status', $status))
             ->orderByDesc('attendance_date')
@@ -342,10 +337,45 @@ class AttendanceController extends Controller
             return null;
         }
 
+        $binary = $this->compressJpeg($binary, (int) $info[0], (int) $info[1]);
+
         $path = 'attendance_photos/' . $userId . '/' . $type . '_' . Str::uuid() . '.jpg';
         Storage::disk('local')->put($path, $binary);
 
         return $path;
+    }
+
+    private function compressJpeg(string $binary, int $width, int $height): string
+    {
+        if (! function_exists('imagecreatefromstring')) {
+            return $binary;
+        }
+
+        $image = @imagecreatefromstring($binary);
+        if (! $image) {
+            return $binary;
+        }
+
+        if ($width > self::PHOTO_MAX_WIDTH) {
+            $newHeight = (int) round($height * self::PHOTO_MAX_WIDTH / $width);
+            $resized = imagescale($image, self::PHOTO_MAX_WIDTH, $newHeight);
+
+            if ($resized) {
+                imagedestroy($image);
+                $image = $resized;
+            }
+        }
+
+        ob_start();
+        imagejpeg($image, null, self::PHOTO_QUALITY);
+        $compressed = ob_get_clean();
+        imagedestroy($image);
+
+        if ($compressed !== false && $compressed !== '' && strlen($compressed) < strlen($binary)) {
+            return $compressed;
+        }
+
+        return $binary;
     }
 
     private function fail(string $message, int $status = 422): JsonResponse
