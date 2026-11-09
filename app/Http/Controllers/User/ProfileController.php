@@ -7,9 +7,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-/**
- * Profil PESERTA: menampilkan data resmi (read-only) dan mengedit data pribadi (teks).
- */
 class ProfileController extends Controller
 {
     public function show(Request $request)
@@ -20,8 +17,6 @@ class ProfileController extends Controller
 
         $mulai   = $fmt($user->periode_mulai);
         $selesai = $fmt($user->periode_selesai);
-
-        // Data yang diatur admin: hanya ditampilkan
         $official = [
             'Email'               => $user->email,
             'Periode PKL'         => ($mulai && $selesai) ? "{$mulai} – {$selesai}" : null,
