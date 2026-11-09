@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\TicketAdminController;
 use App\Http\Controllers\User\ProfileController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -49,6 +50,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/daily-activity/{user}', [AdminDailyActivityController::class, 'show'])->name('daily-activity.show');
     Route::post('/daily-activity/{user}', [AdminDailyActivityController::class, 'store'])->name('daily-activity.store');
 
+    Route::get('/profil', [AdminProfileController::class, 'show'])->name('profil');
+    Route::put('/profil', [AdminProfileController::class, 'update'])->name('profil.update');
 
     Route::get('/tickets', [TicketAdminController::class, 'index'])->name('tickets.index');
     Route::patch('/tickets/{ticket}/verify', [TicketAdminController::class, 'verify'])
