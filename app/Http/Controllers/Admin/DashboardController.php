@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Group;
 use App\Models\User;
-use App\Models\Attendance;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -130,24 +128,29 @@ class DashboardController extends Controller
 
         $ticketDone = (int) ($ticketStats->done ?? 0);
         $ticketProgress = (int) ($ticketStats->progress ?? 0);
-        $semuaGrup = Group::query()
-            ->select('id', 'name')
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get();
-        $warnaGrup = [];
+        $semuaDivisi = User::query()
+            ->where('role', self::ROLE_PESERTA)
+            ->whereNotNull('division')
+            ->where('division', '!=', '')
+            ->distinct()
+            ->orderBy('division')
+            ->pluck('division');
 
+        $warnaGrup = [];
         $jumlahWarna = count(self::WARNA);
 
-        foreach ($semuaGrup->values() as $i => $grup) {
-            $warnaGrup[$grup->id] = $i % $jumlahWarna;
+        foreach ($semuaDivisi as $i => $nama) {
+            $key = Str::lower($nama);
+
+            $warnaGrup[$key] ??= count($warnaGrup) % $jumlahWarna;
         }
 
-        $perGrup = $aktif()
-            ->whereNotNull('group_id')
+        $perDivisi = $aktif()
+            ->whereNotNull('division')
+            ->where('division', '!=', '')
             ->selectRaw(
                 "
-                group_id,
+                division,
                 COUNT(*) as total,
                 GROUP_CONCAT(
                     DISTINCT NULLIF(mentor, '')
@@ -155,31 +158,30 @@ class DashboardController extends Controller
                 ) as mentors
                 "
             )
-            ->groupBy('group_id')
-            ->get()
-            ->keyBy('group_id');
+            ->groupBy('division')
+            ->orderBy('division')
+            ->get();
 
         $groups = [];
 
-        foreach ($semuaGrup as $grup) {
-            $stat = $perGrup->get($grup->id);
-
-            if (! $stat || $stat->total < 1) {
+        foreach ($perDivisi as $row) {
+            if ($row->total < 1) {
                 continue;
             }
 
-            $warna = self::WARNA[$warnaGrup[$grup->id]];
+            $warna = self::WARNA[$warnaGrup[Str::lower($row->division)] ?? 0];
 
             $groups[] = [
-                $grup->name,
-                (int) $stat->total,
-                $stat->mentors ?: '-',
+                $row->division,
+                (int) $row->total,
+                $row->mentors ?: '-',
                 $warna[0],
                 $warna[1],
             ];
         }
 
         $activities = $this->activityFeed($warnaGrup);
+
         return view(
             'admin.dashboardAdmin',
             compact(
@@ -194,11 +196,11 @@ class DashboardController extends Controller
             )
         );
     }
+
     private function activityFeed(array $warnaGrup): array
     {
         $base = fn (string $table, string $alias) => DB::table("$table as $alias")
             ->join('users as u', 'u.id', '=', "$alias.user_id")
-            ->leftJoin('groups as g', 'g.id', '=', 'u.group_id')
             ->where('u.role', self::ROLE_PESERTA);
 
         $events = collect();
@@ -209,8 +211,7 @@ class DashboardController extends Controller
             ->limit(6)
             ->get([
                 'u.name',
-                'u.group_id',
-                'g.name as grup',
+                'u.division as grup',
                 'a.check_in as waktu',
                 'a.check_in_distance as jarak',
             ])
@@ -230,8 +231,7 @@ class DashboardController extends Controller
             ->limit(6)
             ->get([
                 'u.name',
-                'u.group_id',
-                'g.name as grup',
+                'u.division as grup',
                 't.updated_at as waktu',
                 't.ticket_number',
                 't.title',
@@ -270,8 +270,7 @@ class DashboardController extends Controller
             ->limit(6)
             ->get([
                 'u.name',
-                'u.group_id',
-                'g.name as grup',
+                'u.division as grup',
                 'd.updated_at as waktu',
                 'd.description',
             ])
@@ -283,6 +282,7 @@ class DashboardController extends Controller
                     ')',
                 ]);
             });
+
         return $events
             ->filter(fn ($e) => $e[0]->waktu)
             ->sortByDesc(
@@ -293,8 +293,9 @@ class DashboardController extends Controller
                 [$r, $deskripsi] = $e;
 
                 $waktu = Carbon::parse($r->waktu);
-                $avatar = isset($warnaGrup[$r->group_id])
-                    ? self::WARNA[$warnaGrup[$r->group_id]][2]
+                $key = Str::lower((string) $r->grup);
+                $avatar = isset($warnaGrup[$key])
+                    ? self::WARNA[$warnaGrup[$key]][2]
                     : 'bg-surface-container-highest text-on-surface';
                 $inisial = Str::of($r->name)
                     ->explode(' ')

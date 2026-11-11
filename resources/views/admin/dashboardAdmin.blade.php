@@ -35,11 +35,6 @@
                     <span class="font-label-lg text-label-lg font-semibold">KP Jember - SBU Jawa Timur</span>
                     <span class="material-symbols-outlined text-on-surface-variant text-[18px]">arrow_drop_down</span>
                 </div>
-                <button type="button"
-                    class="flex items-center gap-space-xs px-space-md py-2 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-semibold hover:bg-primary-container transition-colors shadow-sm">
-                    <span class="material-symbols-outlined text-[20px]">download</span>
-                    <span>Export Quick Report</span>
-                </button>
             </div>
         </div>
 

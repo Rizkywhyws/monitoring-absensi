@@ -1,4 +1,4 @@
-@extends('layouts.App')
+@extends('layouts.app')
 
 @section('title', 'Absensi - Sistem Manajemen PKL PLN Icon Plus')
 
@@ -10,55 +10,341 @@
 @section('extra-styles')
     <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet" />
     <style>
-        #location-map { z-index: 0; height: 100%; min-height: 288px; }
-        #btn-locate-me { z-index: 1000; }
-        .leaflet-control-attribution { font-size: 9px !important; }
-        button:disabled { opacity: .55; cursor: not-allowed; }
+        #location-map {
+            z-index: 0;
+            height: 100%;
+            min-height: 288px;
+        }
+
+        #btn-locate-me {
+            z-index: 1000;
+        }
+
+        .leaflet-control-attribution {
+            font-size: 9px !important;
+        }
+
+        button:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
 
         /* ===== Indikator langkah ===== */
-        .wizard-steps { display: flex; align-items: flex-start; }
-        .step-item { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 92px; }
-        .step-dot { width: 36px; height: 36px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; background: #e3e6ea; color: #6b7280; transition: all .35s ease; }
-        .step-dot.active { background: #006857; color: #fff; box-shadow: 0 0 0 6px rgba(0, 104, 87, .16); }
-        .step-dot.done { background: #006857; color: #fff; }
-        .step-label { font-size: 12px; font-weight: 600; color: #6b7280; text-align: center; transition: color .3s; }
-        .step-label.active, .step-label.done { color: #006857; }
-        .step-line { flex: 1; height: 3px; background: #e3e6ea; border-radius: 2px; margin: 17px 6px 0; position: relative; overflow: hidden; }
-        .step-line::after { content: ''; position: absolute; inset: 0; background: #006857; transform: scaleX(0); transform-origin: left; transition: transform .45s ease; }
-        .step-line.done::after { transform: scaleX(1); }
+        .wizard-steps {
+            display: flex;
+            align-items: flex-start;
+        }
 
-        .step-panel { animation: panel-in .35s ease both; }
-        @keyframes panel-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 92px;
+        }
+
+        .step-dot {
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            background: #e3e6ea;
+            color: #6b7280;
+            transition: all .35s ease;
+        }
+
+        .step-dot.active {
+            background: #006857;
+            color: #fff;
+            box-shadow: 0 0 0 6px rgba(0, 104, 87, .16);
+        }
+
+        .step-dot.done {
+            background: #006857;
+            color: #fff;
+        }
+
+        .step-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-align: center;
+            transition: color .3s;
+        }
+
+        .step-label.active,
+        .step-label.done {
+            color: #006857;
+        }
+
+        .step-line {
+            flex: 1;
+            height: 3px;
+            background: #e3e6ea;
+            border-radius: 2px;
+            margin: 17px 6px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-line::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: #006857;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform .45s ease;
+        }
+
+        .step-line.done::after {
+            transform: scaleX(1);
+        }
+
+        .step-panel {
+            animation: panel-in .35s ease both;
+        }
 
         /* ===== Kamera ===== */
-        .shutter-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
-        .shutter-flash.go { animation: shutter .4s ease-out; }
-        @keyframes shutter { 0% { opacity: .9; } 100% { opacity: 0; } }
+        .shutter-flash {
+            position: absolute;
+            inset: 0;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+        }
 
-        /* ===== Animasi hasil presensi ===== */
-        .result-card { position: relative; overflow: hidden; animation: result-card-in .4s cubic-bezier(.2, .9, .3, 1.15) both; }
-        .result-icon { position: relative; width: 96px; height: 96px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--accent, #006857); }
-        .result-svg { width: 96px; height: 96px; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; animation: result-pop .55s cubic-bezier(.34, 1.56, .64, 1) both; }
-        .result-fill { fill: currentColor; stroke: none; opacity: 0; animation: result-fill .5s ease-out .6s forwards; }
-        .result-circle { stroke-dasharray: 151; stroke-dashoffset: 151; animation: result-draw .6s ease-out .1s forwards; }
-        .result-mark { stroke-width: 3.5; stroke-dasharray: 40; stroke-dashoffset: 40; animation: result-draw .4s ease-out .65s forwards; }
-        .result-mark.is-x { stroke-dasharray: 60; stroke-dashoffset: 60; }
-        .result-ring { position: absolute; inset: 0; border-radius: 50%; background: currentColor; opacity: 0; animation: result-ring 1.3s ease-out .6s; }
-        .result-card.is-error .result-svg { animation: result-shake .55s ease .15s both; }
-        .result-row { animation: result-row-in .4s ease-out both; }
-        .confetti-piece { position: absolute; left: 50%; top: 80px; width: 8px; height: 8px; border-radius: 2px; opacity: 0; animation: confetti-burst 1s ease-out .6s forwards; }
+        .shutter-flash.go {
+            animation: shutter .4s ease-out;
+        }
 
-        @keyframes result-card-in { from { opacity: 0; transform: translateY(24px) scale(.92); } to { opacity: 1; transform: none; } }
-        @keyframes result-pop { 0% { transform: scale(.6); } 100% { transform: scale(1); } }
-        @keyframes result-draw { to { stroke-dashoffset: 0; } }
-        @keyframes result-fill { to { opacity: .12; } }
-        @keyframes result-ring { 0% { opacity: .35; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.9); } }
-        @keyframes result-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
-        @keyframes result-row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-        @keyframes confetti-burst { 0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(.5); } }
+        /* ===== Hasil presensi ===== */
+        .result-card {
+            position: relative;
+            overflow: hidden;
+            animation: result-card-in .4s cubic-bezier(.2, .9, .3, 1.15) both;
+        }
+
+        .result-icon {
+            position: relative;
+            width: 96px;
+            height: 96px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent, #006857);
+        }
+
+        .result-svg {
+            width: 96px;
+            height: 96px;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            animation: result-pop .55s cubic-bezier(.34, 1.56, .64, 1) both;
+        }
+
+        .result-fill {
+            fill: currentColor;
+            stroke: none;
+            opacity: 0;
+            animation: result-fill .5s ease-out .6s forwards;
+        }
+
+        .result-circle {
+            stroke-dasharray: 151;
+            stroke-dashoffset: 151;
+            animation: result-draw .6s ease-out .1s forwards;
+        }
+
+        .result-mark {
+            stroke-width: 3.5;
+            stroke-dasharray: 40;
+            stroke-dashoffset: 40;
+            animation: result-draw .4s ease-out .65s forwards;
+        }
+
+        .result-mark.is-x {
+            stroke-dasharray: 60;
+            stroke-dashoffset: 60;
+        }
+
+        .result-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0;
+            animation: result-ring 1.3s ease-out .6s;
+        }
+
+        .result-card.is-error .result-svg {
+            animation: result-shake .55s ease .15s both;
+        }
+
+        .result-card.is-closing {
+            animation: result-card-out .25s ease forwards;
+        }
+
+        .result-row {
+            animation: result-row-in .4s ease-out both;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            left: 50%;
+            top: 80px;
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            opacity: 0;
+            animation: confetti-burst 1s ease-out .6s forwards;
+        }
+
+        @keyframes panel-in {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes shutter {
+            0% {
+                opacity: .9;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes result-card-in {
+            from {
+                opacity: 0;
+                transform: translateY(24px) scale(.92);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes result-pop {
+            0% {
+                transform: scale(.6);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes result-draw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes result-fill {
+            to {
+                opacity: .12;
+            }
+        }
+
+        @keyframes result-ring {
+            0% {
+                opacity: .35;
+                transform: scale(.9);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(1.9);
+            }
+        }
+
+        @keyframes result-shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20% {
+                transform: translateX(-8px);
+            }
+
+            40% {
+                transform: translateX(8px);
+            }
+
+            60% {
+                transform: translateX(-5px);
+            }
+
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        @keyframes result-row-in {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes confetti-burst {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(0) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(.5);
+            }
+        }
+
+        @keyframes result-card-out {
+            to {
+                opacity: 0;
+                transform: translateY(8px) scale(.97);
+            }
+        }
 
         @media (prefers-reduced-motion: reduce) {
-            .step-panel, .step-dot, .step-line::after, .shutter-flash, .result-card, .result-svg, .result-fill, .result-circle, .result-mark, .result-ring, .result-row, .confetti-piece {
+
+            .step-panel,
+            .step-dot,
+            .step-line::after,
+            .shutter-flash,
+            .result-card,
+            .result-svg,
+            .result-fill,
+            .result-circle,
+            .result-mark,
+            .result-ring,
+            .result-row,
+            .confetti-piece {
                 animation-duration: .01ms !important;
                 animation-delay: 0s !important;
                 transition-duration: .01ms !important;
@@ -69,15 +355,15 @@
 
 @section('content')
     @php
-        // Hari ini tercatat izin/sakit (pengajuan sudah disetujui admin)
+        // Pengajuan izin/sakit yang disetujui admin tercatat sebagai attendance berstatus sakit/izin.
         $onLeave = $todayAttendance && in_array($todayAttendance->status, ['sakit', 'izin'], true);
-        $leaveLabel = $onLeave ? ($todayAttendance->status === 'sakit' ? 'Sakit' : 'Izin') : null;
-        $pendingLeave = $pendingLeave ?? null;
+        $leaveLabel = $onLeave ? ucfirst($todayAttendance->status) : null;
 
-        $checkedIn = $todayAttendance && ! $onLeave;
-        $checkedOut = $checkedIn && $todayAttendance->check_out;
+        // Hanya check-in: begitu tercatat hadir/telat, presensi hari ini selesai.
+        $checkedIn = $todayAttendance && !$onLeave;
         $isLate = $checkedIn && $todayAttendance->status === 'telat';
-        $actionLabel = $checkedIn ? 'Check-out' : 'Check-in';
+
+        $sideBorder = 'md:pl-space-lg md:border-l md:border-surface-variant/40';
     @endphp
 
     <div class="flex flex-col gap-space-xl">
@@ -89,10 +375,8 @@
                 <p class="font-body-md text-body-md text-on-surface-variant">
                     @if ($onLeave)
                         Hari ini Anda tercatat {{ strtolower($leaveLabel) }} (pengajuan telah disetujui admin).
-                    @elseif ($checkedOut)
-                        Kehadiran Anda hari ini sudah lengkap (check-in &amp; check-out).
                     @elseif ($checkedIn)
-                        Anda sudah check-in. Lakukan check-out saat pekerjaan selesai.
+                        Kehadiran Anda hari ini sudah tercatat. Tidak perlu absensi lagi.
                     @else
                         Ikuti 3 langkah berikut: verifikasi lokasi, ambil swafoto, lalu konfirmasi absensi.
                     @endif
@@ -103,43 +387,51 @@
                 <div class="flex items-center gap-2 px-space-md py-space-xs rounded-xl bg-surface-container-low shadow-sm">
                     <span class="material-symbols-outlined text-primary text-[20px]">calendar_month</span>
                     <div class="flex flex-col">
-                        <span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Hari &amp; Tanggal</span>
-                        <span class="font-label-md text-label-md text-on-surface">{{ now()->translatedFormat('l, d F Y') }}</span>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Hari &amp;
+                            Tanggal</span>
+                        <span
+                            class="font-label-md text-label-md text-on-surface">{{ now()->translatedFormat('l, d F Y') }}</span>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 px-space-md py-space-xs rounded-xl bg-primary/10 shadow-sm">
                     <span class="material-symbols-outlined text-primary text-[20px]">work_history</span>
                     <div class="flex flex-col">
-                        <span class="font-label-sm text-label-sm text-primary leading-none">Jadwal Penugasan</span>
-                        <span class="font-label-md text-label-md text-primary">Shift Pagi: 08:00 – 17:00 WIB</span>
+                        <span class="font-label-sm text-label-sm text-primary leading-none">Batas Tepat Waktu</span>
+                        <span class="font-label-md text-label-md text-primary">Check-in sampai
+                            {{ $lateAfter->format('H:i') }} WIB</span>
                     </div>
                 </div>
             </div>
         </div>
 
+        {{-- ================= BANNER STATUS ================= --}}
         @if ($onLeave)
-            <div class="flex items-start gap-space-sm p-space-lg rounded-xl bg-secondary-fixed text-on-secondary-fixed-variant">
+            <div
+                class="flex items-start gap-space-sm p-space-lg rounded-xl bg-secondary-fixed text-on-secondary-fixed-variant">
                 <span class="material-symbols-outlined text-[28px]">event_available</span>
                 <div class="flex flex-col gap-1">
                     <span class="font-headline-sm text-headline-sm">{{ $leaveLabel }} disetujui</span>
                     <span class="font-body-md text-body-md">
-                        Hari ini tercatat sebagai {{ strtolower($leaveLabel) }}, jadi tidak perlu check-in maupun check-out.
+                        Hari ini tercatat sebagai {{ strtolower($leaveLabel) }}, jadi tidak perlu absensi.
                         Semoga urusan Anda lancar.
                     </span>
                 </div>
             </div>
-        @elseif (! $checkedIn && $pendingLeave)
+        @elseif (!$checkedIn && $pendingLeave)
             <div class="flex items-start gap-space-sm p-space-lg rounded-xl bg-tertiary-fixed text-on-tertiary-fixed">
                 <span class="material-symbols-outlined text-[28px]">hourglass_top</span>
                 <div class="flex flex-col gap-1">
-                    <span class="font-headline-sm text-headline-sm">Pengajuan {{ strtolower($pendingLeave->typeLabel()) }} menunggu persetujuan</span>
-                    <span class="font-body-md text-body-md">
-                        Jika Anda tetap masuk dan melakukan check-in hari ini, pengajuan tersebut akan dibatalkan otomatis.
+                    <span class="font-headline-sm text-headline-sm">
+                        Pengajuan {{ strtolower($pendingLeave->typeLabel()) }} menunggu persetujuan
                     </span>
-                    <a href="{{ route('izin') }}" class="self-start font-label-lg text-label-lg underline">Lihat pengajuan</a>
+                    <span class="font-body-md text-body-md">
+                        Pengajuan Anda belum disetujui admin. Jika Anda tetap masuk, silakan lakukan absensi seperti biasa.
+                    </span>
+                    <a href="{{ route('izin') }}" class="self-start font-label-lg text-label-lg underline">Lihat
+                        pengajuan</a>
                 </div>
             </div>
-        @elseif (! $checkedIn)
+        @elseif (!$checkedIn)
             <a href="{{ route('izin') }}"
                 class="self-start inline-flex items-center gap-1.5 px-space-md py-2 rounded-xl bg-surface-container-low text-primary font-label-md text-label-md hover:bg-surface-container-high transition-colors">
                 <span class="material-symbols-outlined text-[18px]">sick</span>
@@ -154,94 +446,93 @@
 
                 {{-- ---------- Kartu status presensi ---------- --}}
                 <div class="relative overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm p-space-xl">
-                    <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-primary/5 blur-3xl pointer-events-none"></div>
+                    <div
+                        class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-primary/5 blur-3xl pointer-events-none">
+                    </div>
 
                     <div class="relative z-10 flex flex-col gap-space-lg">
                         <div class="flex items-center justify-between gap-space-sm">
                             <div class="flex items-center gap-space-xs">
                                 <span class="material-symbols-outlined text-primary text-[22px]">fingerprint</span>
-                                <span class="font-headline-sm text-headline-sm text-on-surface">Status Presensi Harian</span>
+                                <span class="font-headline-sm text-headline-sm text-on-surface">Status Presensi
+                                    Harian</span>
                             </div>
 
                             @if ($onLeave)
-                                <div class="flex items-center gap-2 px-space-md py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant">
+                                <div
+                                    class="flex items-center gap-2 px-space-md py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant">
                                     <span class="w-2 h-2 rounded-full bg-secondary"></span>
                                     <span class="font-label-md text-label-md">{{ $leaveLabel }}</span>
                                 </div>
-                            @elseif ($checkedOut)
-                                <div class="flex items-center gap-2 px-space-md py-1 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant">
-                                    <span class="w-2 h-2 rounded-full bg-primary"></span>
-                                    <span class="font-label-md text-label-md">Selesai</span>
-                                </div>
                             @elseif ($checkedIn)
-                                <div class="flex items-center gap-2 px-space-md py-1 rounded-full {{ $isLate ? 'bg-error-container text-on-error-container' : 'bg-primary-fixed/40 text-on-primary-fixed-variant' }}">
+                                <div
+                                    class="flex items-center gap-2 px-space-md py-1 rounded-full {{ $isLate ? 'bg-error-container text-on-error-container' : 'bg-primary-fixed/40 text-on-primary-fixed-variant' }}">
                                     <span class="w-2 h-2 rounded-full {{ $isLate ? 'bg-error' : 'bg-primary' }}"></span>
                                     <span class="font-label-md text-label-md">{{ $isLate ? 'Terlambat' : 'Hadir' }}</span>
                                 </div>
                             @else
-                                <div class="flex items-center gap-2 px-space-md py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed">
+                                <div
+                                    class="flex items-center gap-2 px-space-md py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed">
                                     <span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
-                                    <span class="font-label-md text-label-md">Belum Check-in</span>
+                                    <span class="font-label-md text-label-md">Belum Absen</span>
                                 </div>
                             @endif
                         </div>
 
-                        <div class="flex flex-col md:flex-row items-center justify-between gap-space-md p-space-lg rounded-xl bg-surface-container-low">
+                        <div
+                            class="flex flex-col md:flex-row items-center justify-between gap-space-md p-space-lg rounded-xl bg-surface-container-low">
                             <div class="flex flex-col items-center md:items-start">
                                 <div class="flex items-center gap-2">
                                     <span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
-                                    <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Waktu Saat Ini</span>
+                                    <span
+                                        class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Waktu
+                                        Saat Ini</span>
                                 </div>
-                                <div class="font-stat-counter text-[40px] leading-tight text-on-surface font-bold tracking-tight my-1" id="realtime-clock">
-                                    --:--:-- <span class="font-label-lg text-label-lg text-on-surface-variant font-medium">WIB</span>
+                                <div id="realtime-clock"
+                                    class="font-stat-counter text-[40px] leading-tight text-on-surface font-bold tracking-tight my-1">
+                                    --:--:-- <span
+                                        class="font-label-lg text-label-lg text-on-surface-variant font-medium">WIB</span>
                                 </div>
                             </div>
 
-                            @if ($onLeave)
-                                <div class="flex flex-col gap-1 items-end self-stretch justify-center md:pl-space-lg md:border-l md:border-surface-variant/40">
+                            <div class="flex flex-col gap-1 items-end self-stretch justify-center {{ $sideBorder }}">
+                                @if ($onLeave)
                                     <span class="font-label-sm text-label-sm text-on-surface-variant">Status Hari Ini</span>
-                                    <span class="font-headline-sm text-headline-sm text-primary">{{ $leaveLabel }} disetujui</span>
-                                </div>
-                            @elseif (!$checkedIn)
-                                <div class="flex flex-col gap-1 items-end self-stretch justify-center md:pl-space-lg md:border-l md:border-surface-variant/40">
-                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Tenggat Check-in Tepat Waktu</span>
-                                    <span class="font-headline-sm text-headline-sm text-primary">{{ $lateAfter->format('H:i:s') }} WIB</span>
-                                    <span class="font-label-sm text-label-sm text-tertiary" id="late-countdown">–</span>
-                                </div>
-                            @else
-                                <div class="flex flex-col gap-1 items-end self-stretch justify-center md:pl-space-lg md:border-l md:border-surface-variant/40">
-                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Check-in</span>
-                                    <span class="font-headline-sm text-headline-sm text-primary">{{ $todayAttendance->check_in->format('H:i:s') }} WIB</span>
-                                    @if ($checkedOut)
+                                    <span class="font-headline-sm text-headline-sm text-primary">{{ $leaveLabel }}
+                                        disetujui</span>
+                                @elseif ($checkedIn)
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Waktu Absensi</span>
+                                    <span
+                                        class="font-headline-sm text-headline-sm text-primary">{{ $todayAttendance->check_in->format('H:i:s') }}
+                                        WIB</span>
+                                    @if (!is_null($todayAttendance->check_in_distance))
                                         <span class="font-label-sm text-label-sm text-on-surface-variant">
-                                            Check-out {{ $todayAttendance->check_out->format('H:i:s') }} WIB
+                                            {{ round($todayAttendance->check_in_distance) }} m dari kantor
                                         </span>
                                     @endif
-                                </div>
-                            @endif
+                                @else
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Tenggat Tepat
+                                        Waktu</span>
+                                    <span
+                                        class="font-headline-sm text-headline-sm text-primary">{{ $lateAfter->format('H:i:s') }}
+                                        WIB</span>
+                                    <span class="font-label-sm text-label-sm text-tertiary" id="late-countdown">–</span>
+                                @endif
+                            </div>
                         </div>
 
                         @if ($checkedIn)
-                            <div class="flex flex-wrap gap-space-md">
-                                @if ($todayAttendance->check_in_photo)
-                                    <div class="flex flex-col gap-1">
-                                        <span class="font-label-sm text-label-sm text-on-surface-variant">Foto Check-in</span>
-                                        <img src="{{ route('absensi.photo', [$todayAttendance, 'in']) }}" alt="Foto check-in"
-                                            class="w-32 h-32 object-cover rounded-xl shadow-sm">
-                                    </div>
-                                @endif
-                                @if ($todayAttendance->check_out_photo)
-                                    <div class="flex flex-col gap-1">
-                                        <span class="font-label-sm text-label-sm text-on-surface-variant">Foto Check-out</span>
-                                        <img src="{{ route('absensi.photo', [$todayAttendance, 'out']) }}" alt="Foto check-out"
-                                            class="w-32 h-32 object-cover rounded-xl shadow-sm">
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
+                            @if ($todayAttendance->check_in_photo)
+                                <div class="flex flex-col gap-1">
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Foto Absensi</span>
+                                    <img src="{{ route('absensi.photo', [$todayAttendance, 'in']) }}" alt="Foto absensi"
+                                        class="w-full max-w-[240px] object-cover rounded-xl shadow-sm"
+                                        style="aspect-ratio:3/4;">
+                                </div>
+                            @endif
 
-                        @if ($checkedOut)
-                            <div class="w-full h-14 rounded-xl bg-primary-fixed/30 text-on-primary-fixed-variant font-headline-sm text-headline-sm flex items-center justify-center gap-space-sm">
+                            <div
+                                class="w-full h-14 rounded-xl bg-primary-fixed/30 text-on-primary-fixed-variant font-headline-sm text-headline-sm flex items-center justify-center gap-space-sm">
                                 <span class="material-symbols-outlined text-[24px]">task_alt</span>
                                 <span>Presensi Hari Ini Selesai</span>
                             </div>
@@ -250,12 +541,13 @@
                 </div>
 
                 {{-- ================= WIZARD 3 LANGKAH ================= --}}
-                @unless ($checkedOut || $onLeave)
-                    <div id="wizard" class="rounded-xl bg-surface-container-lowest shadow-sm p-space-xl flex flex-col gap-space-lg">
+                @unless ($checkedIn || $onLeave)
+                    <div id="wizard"
+                        class="rounded-xl bg-surface-container-lowest shadow-sm p-space-xl flex flex-col gap-space-lg">
 
                         <div class="flex items-center gap-space-xs">
-                            <span class="material-symbols-outlined text-primary text-[22px]">{{ $checkedIn ? 'logout' : 'login' }}</span>
-                            <span class="font-headline-sm text-headline-sm text-on-surface">{{ $actionLabel }} Absensi</span>
+                            <span class="material-symbols-outlined text-primary text-[22px]">login</span>
+                            <span class="font-headline-sm text-headline-sm text-on-surface">Absensi Kehadiran</span>
                         </div>
 
                         {{-- Indikator langkah --}}
@@ -282,8 +574,12 @@
                                 <div class="flex items-center gap-space-xs">
                                     <span class="material-symbols-outlined text-primary text-[22px]">radar</span>
                                     <div class="flex flex-col">
-                                        <span class="font-headline-sm text-headline-sm text-on-surface">Langkah 1: Verifikasi Lokasi</span>
-                                        <span class="font-body-sm text-body-sm text-on-surface-variant" id="gps-status-subtitle">Menunggu izin akses lokasi perangkat</span>
+                                        <span class="font-headline-sm text-headline-sm text-on-surface">Langkah 1: Verifikasi
+                                            Lokasi</span>
+                                        <span class="font-body-sm text-body-sm text-on-surface-variant"
+                                            id="gps-status-subtitle">
+                                            Menunggu izin akses lokasi perangkat
+                                        </span>
                                     </div>
                                 </div>
                                 <span id="gps-status-badge"
@@ -293,7 +589,8 @@
                                 </span>
                             </div>
 
-                            <div class="relative w-full rounded-xl overflow-hidden shadow-inner bg-surface-container-low" style="height:288px;">
+                            <div class="relative w-full rounded-xl overflow-hidden shadow-inner bg-surface-container-low"
+                                style="height:288px;">
                                 <div class="w-full h-full" id="location-map"></div>
                                 <button type="button" id="btn-locate-me"
                                     class="absolute bottom-3 right-3 z-[400] h-10 px-space-md rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md shadow-md hover:bg-surface-container-high transition-colors flex items-center justify-center gap-1.5">
@@ -303,44 +600,43 @@
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-space-sm">
-                                <div class="p-space-md rounded-xl bg-surface-container-low flex items-center gap-space-sm">
-                                    <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                        <span class="material-symbols-outlined text-[22px]">gps_fixed</span>
+                                @foreach ([['icon' => 'gps_fixed', 'tone' => 'bg-primary/10 text-primary', 'label' => 'Status GPS', 'id' => 'metric-gps-status', 'initial' => 'Belum Aktif'], ['icon' => 'near_me', 'tone' => 'bg-secondary/10 text-secondary', 'label' => 'Jarak ke Kantor', 'id' => 'metric-distance', 'initial' => '–'], ['icon' => 'crisis_alert', 'tone' => 'bg-tertiary/10 text-tertiary', 'label' => 'Akurasi GPS', 'id' => 'metric-accuracy', 'initial' => '–']] as $metric)
+                                    <div class="p-space-md rounded-xl bg-surface-container-low flex items-center gap-space-sm">
+                                        <div
+                                            class="w-10 h-10 rounded-lg {{ $metric['tone'] }} flex items-center justify-center shrink-0">
+                                            <span class="material-symbols-outlined text-[22px]">{{ $metric['icon'] }}</span>
+                                        </div>
+                                        <div class="flex flex-col min-w-0">
+                                            <span
+                                                class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ $metric['label'] }}</span>
+                                            <span class="font-label-lg text-label-lg text-on-surface font-semibold truncate"
+                                                id="{{ $metric['id'] }}">{{ $metric['initial'] }}</span>
+                                        </div>
                                     </div>
-                                    <div class="flex flex-col min-w-0">
-                                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">Status GPS</span>
-                                        <span class="font-label-lg text-label-lg text-on-surface font-semibold truncate" id="metric-gps-status">Belum Aktif</span>
-                                    </div>
-                                </div>
-                                <div class="p-space-md rounded-xl bg-surface-container-low flex items-center gap-space-sm">
-                                    <div class="w-10 h-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
-                                        <span class="material-symbols-outlined text-[22px]">near_me</span>
-                                    </div>
-                                    <div class="flex flex-col min-w-0">
-                                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">Jarak ke Kantor</span>
-                                        <span class="font-label-lg text-label-lg text-on-surface font-semibold truncate" id="metric-distance">–</span>
-                                    </div>
-                                </div>
-                                <div class="p-space-md rounded-xl bg-surface-container-low flex items-center gap-space-sm">
-                                    <div class="w-10 h-10 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0">
-                                        <span class="material-symbols-outlined text-[22px]">crisis_alert</span>
-                                    </div>
-                                    <div class="flex flex-col min-w-0">
-                                        <span class="font-label-sm text-label-sm text-on-surface-variant truncate">Akurasi GPS</span>
-                                        <span class="font-label-lg text-label-lg text-on-surface font-semibold truncate" id="metric-accuracy">–</span>
-                                    </div>
-                                </div>
+                                @endforeach
                             </div>
 
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
                                 <div class="flex items-start gap-2 max-w-lg">
-                                    <span class="material-symbols-outlined text-outline text-[20px] mt-0.5 shrink-0">corporate_fare</span>
-                                    <div class="flex flex-col">
-                                        <span class="font-label-md text-label-md text-on-surface">{{ $office['name'] ?? 'Lokasi kantor belum dikonfigurasi' }}</span>
-                                        @if ($office)
+                                    <span
+                                        class="material-symbols-outlined text-outline text-[20px] mt-0.5 shrink-0">corporate_fare</span>
+                                    <div class="flex flex-col gap-1">
+                                        @forelse ($offices as $office)
+                                            <div class="flex flex-col">
+                                                <span
+                                                    class="font-label-md text-label-md text-on-surface">{{ $office['name'] }}</span>
+                                                <span class="font-body-sm text-body-sm text-on-surface-variant">
+                                                    Radius presensi {{ round($office['radius']) }} meter
+                                                </span>
+                                            </div>
+                                        @empty
+                                            <span class="font-label-md text-label-md text-on-surface">Lokasi kantor belum
+                                                dikonfigurasi</span>
+                                        @endforelse
+
+                                        @if ($offices->isNotEmpty())
                                             <span class="font-body-sm text-body-sm text-on-surface-variant">
-                                                Radius presensi: {{ round($office['radius']) }} meter dari titik kantor
-                                                (akurasi GPS maks. ±{{ $maxAccuracy }} m)
+                                                Akurasi GPS maks. ±{{ $maxAccuracy }} m
                                             </span>
                                         @endif
                                     </div>
@@ -365,15 +661,20 @@
                             <div class="flex items-center gap-space-xs">
                                 <span class="material-symbols-outlined text-primary text-[22px]">photo_camera_front</span>
                                 <div class="flex flex-col">
-                                    <span class="font-headline-sm text-headline-sm text-on-surface">Langkah 2: Ambil Swafoto</span>
-                                    <span class="font-body-sm text-body-sm text-on-surface-variant">Pastikan seluruh wajah terlihat jelas dan pencahayaan cukup.</span>
+                                    <span class="font-headline-sm text-headline-sm text-on-surface">Langkah 2: Ambil
+                                        Swafoto</span>
+                                    <span class="font-body-sm text-body-sm text-on-surface-variant">
+                                        Pastikan seluruh wajah terlihat jelas dan pencahayaan cukup.
+                                    </span>
                                 </div>
                             </div>
 
                             <div class="relative w-full rounded-xl overflow-hidden bg-inverse-surface"
-                                style="aspect-ratio:4/3; max-width:480px; margin:0 auto;">
-                                <video id="camera-preview" autoplay muted playsinline class="w-full h-full object-cover"></video>
-                                <img id="captured-photo" alt="Hasil swafoto" class="w-full h-full object-cover absolute inset-0" style="display:none;">
+                                style="width:100%; aspect-ratio:3/4; max-width:480px; margin:0 auto;">
+                                <video id="camera-preview" autoplay muted playsinline
+                                    class="w-full h-full object-cover"></video>
+                                <img id="captured-photo" alt="Hasil swafoto"
+                                    class="w-full h-full object-cover absolute inset-0" style="display:none;">
 
                                 <div id="camera-placeholder"
                                     class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-inverse-on-surface/70 font-body-sm text-body-sm text-center p-4">
@@ -431,48 +732,33 @@
                             <div class="flex items-center gap-space-xs">
                                 <span class="material-symbols-outlined text-primary text-[22px]">fact_check</span>
                                 <div class="flex flex-col">
-                                    <span class="font-headline-sm text-headline-sm text-on-surface">Langkah 3: Konfirmasi Absensi</span>
-                                    <span class="font-body-sm text-body-sm text-on-surface-variant">Periksa kembali data berikut sebelum dikirim.</span>
+                                    <span class="font-headline-sm text-headline-sm text-on-surface">Langkah 3: Konfirmasi
+                                        Absensi</span>
+                                    <span class="font-body-sm text-body-sm text-on-surface-variant">Periksa kembali data
+                                        berikut sebelum dikirim.</span>
                                 </div>
                             </div>
 
                             <div class="flex flex-col sm:flex-row gap-space-md">
-                                <img id="confirm-photo" alt="Swafoto"
-                                    style="width:180px; aspect-ratio:4/3; object-fit:cover; border-radius:12px; align-self:flex-start;"
-                                    class="shadow-sm">
-
-                                <div class="flex-1 flex flex-col gap-2 p-space-md rounded-xl bg-surface-container-low font-body-sm text-body-sm">
-                                    <div class="flex justify-between gap-3">
-                                        <span class="text-on-surface-variant">Jenis Presensi</span>
-                                        <span class="font-label-md text-label-md text-on-surface" id="confirm-type">–</span>
-                                    </div>
-                                    <div class="flex justify-between gap-3">
-                                        <span class="text-on-surface-variant">Waktu</span>
-                                        <span class="font-label-md text-label-md text-primary" id="confirm-time">--:--:-- WIB</span>
-                                    </div>
-                                    <div class="flex justify-between gap-3">
-                                        <span class="text-on-surface-variant">Lokasi</span>
-                                        <span class="font-label-md text-label-md text-on-surface text-right" id="confirm-location">–</span>
-                                    </div>
-                                    <div class="flex justify-between gap-3">
-                                        <span class="text-on-surface-variant">Jarak ke Kantor</span>
-                                        <span class="font-label-md text-label-md text-on-surface" id="confirm-distance">–</span>
-                                    </div>
-                                    <div class="flex justify-between gap-3">
-                                        <span class="text-on-surface-variant">Akurasi GPS</span>
-                                        <span class="font-label-md text-label-md text-on-surface" id="confirm-accuracy">–</span>
-                                    </div>
-                                    <div class="flex justify-between gap-3" id="confirm-status-row">
-                                        <span class="text-on-surface-variant">Perkiraan Status</span>
-                                        <span class="font-label-md text-label-md" id="confirm-status">–</span>
-                                    </div>
+                                <img id="confirm-photo" alt="Swafoto" class="w-full max-w-[240px] shadow-sm"
+                                    style="aspect-ratio:3/4; object-fit:cover; border-radius:12px; align-self:flex-start;">
+                                <div
+                                    class="flex-1 flex flex-col gap-2 p-space-md rounded-xl bg-surface-container-low font-body-sm text-body-sm">
+                                    @foreach ([['Waktu', 'confirm-time', 'text-primary', '--:--:-- WIB'], ['Lokasi', 'confirm-location', 'text-on-surface text-right', '–'], ['Jarak ke Kantor', 'confirm-distance', 'text-on-surface', '–'], ['Akurasi GPS', 'confirm-accuracy', 'text-on-surface', '–'], ['Perkiraan Status', 'confirm-status', '', '–']] as [$label, $id, $classes, $initial])
+                                        <div class="flex justify-between gap-3">
+                                            <span class="text-on-surface-variant">{{ $label }}</span>
+                                            <span class="font-label-md text-label-md {{ $classes }}"
+                                                id="{{ $id }}">{{ $initial }}</span>
+                                        </div>
+                                    @endforeach
                                 </div>
                             </div>
 
                             <div class="flex items-start gap-space-xs px-space-sm py-2 rounded-lg bg-surface-container-low">
                                 <span class="material-symbols-outlined text-outline text-[18px] mt-0.5">info</span>
                                 <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                                    Batas toleransi kehadiran adalah pukul <strong>{{ $lateAfter->format('H:i') }} WIB</strong>.
+                                    Batas toleransi kehadiran adalah pukul <strong>{{ $lateAfter->format('H:i') }}
+                                        WIB</strong>.
                                     Waktu resmi dicatat oleh server saat absensi dikirim, dan lokasi akan diverifikasi ulang.
                                 </p>
                             </div>
@@ -494,68 +780,72 @@
                 @endunless
             </div>
 
-
+            {{-- ================= KOLOM KANAN ================= --}}
             <div class="xl:col-span-5 flex flex-col gap-space-xl">
 
                 <div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-xl flex flex-col gap-space-md">
                     <div class="flex items-center gap-space-sm p-space-sm rounded-xl bg-surface-container-low">
-                        <div class="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold shrink-0">
-                            {{ $pembimbingInitials ?? '-' }}
+                        <div
+                            class="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold shrink-0">
+                            {{ $pembimbingInitials }}
                         </div>
                         <div class="flex flex-col min-w-0 flex-1">
-                            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Mentor Lapangan Penanggung Jawab</span>
-                            <span class="font-label-lg text-label-lg text-on-surface font-semibold truncate">{{ $pembimbing ?: '-' }}</span>
+                            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                                Mentor Lapangan Penanggung Jawab
+                            </span>
+                            <span
+                                class="font-label-lg text-label-lg text-on-surface font-semibold truncate">{{ $pembimbing ?: '-' }}</span>
                         </div>
                         <span class="material-symbols-outlined text-primary text-[20px]">verified_user</span>
                     </div>
                 </div>
 
                 <div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-xl flex flex-col gap-space-md">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-space-xs">
-                            <span class="material-symbols-outlined text-primary text-[22px]">history</span>
-                            <span class="font-headline-sm text-headline-sm text-on-surface">Riwayat Terakhir</span>
-                        </div>
+                    <div class="flex items-center gap-space-xs">
+                        <span class="material-symbols-outlined text-primary text-[22px]">history</span>
+                        <span class="font-headline-sm text-headline-sm text-on-surface">Riwayat Terakhir</span>
                     </div>
 
                     <div class="flex flex-col gap-space-sm">
                         @forelse ($recentAttendances as $row)
-                            <div class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-colors flex flex-col gap-space-xs">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-label-lg text-label-lg text-on-surface font-semibold">
-                                            {{ $row->attendance_date->translatedFormat('l, d M Y') }}
+                            <div
+                                class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-colors flex flex-col gap-space-xs">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-label-lg text-label-lg text-on-surface font-semibold">
+                                        {{ $row->attendance_date->translatedFormat('l, d M Y') }}
+                                    </span>
+                                    @if ($row->status === 'hadir')
+                                        <span
+                                            class="px-2 py-0.5 rounded-full bg-primary-fixed/30 text-on-primary-fixed-variant font-label-sm text-[10px]">Tepat
+                                            Waktu</span>
+                                    @elseif ($row->status === 'telat')
+                                        <span
+                                            class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-[10px]">Terlambat</span>
+                                    @else
+                                        <span
+                                            class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-[10px]">
+                                            {{ $row->status === 'sakit' ? 'Sakit' : 'Izin' }}
                                         </span>
-                                        @if ($row->status === 'hadir')
-                                            <span class="px-2 py-0.5 rounded-full bg-primary-fixed/30 text-on-primary-fixed-variant font-label-sm text-[10px]">Tepat Waktu</span>
-                                        @elseif ($row->status === 'telat')
-                                            <span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-[10px]">Terlambat</span>
-                                        @else
-                                            <span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-[10px]">{{ $row->status === 'sakit' ? 'Sakit' : 'Izin' }}</span>
-                                        @endif
-                                    </div>
+                                    @endif
                                 </div>
-                                <div class="flex flex-wrap items-center justify-between gap-2 font-body-sm text-body-sm text-on-surface-variant pt-1">
-                                    <div class="flex items-center gap-4">
-                                        <span class="flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-primary text-[16px]">login</span>
-                                            {{ $row->check_in?->format('H:i') ?? '-' }} WIB
-                                        </span>
-                                        <span class="flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-secondary text-[16px]">logout</span>
-                                            {{ $row->check_out ? $row->check_out->format('H:i') . ' WIB' : '–' }}
-                                        </span>
-                                    </div>
+                                <div
+                                    class="flex flex-wrap items-center justify-between gap-2 font-body-sm text-body-sm text-on-surface-variant pt-1">
+                                    <span class="flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-primary text-[16px]">login</span>
+                                        {{ $row->check_in ? $row->check_in->format('H:i') . ' WIB' : '-' }}
+                                    </span>
                                     @if ($row->check_in_distance !== null)
                                         <span class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface">
-                                            <span class="material-symbols-outlined text-outline text-[14px]">pin_drop</span>
+                                            <span
+                                                class="material-symbols-outlined text-outline text-[14px]">pin_drop</span>
                                             {{ round($row->check_in_distance) }}m dari kantor
                                         </span>
                                     @endif
                                 </div>
                             </div>
                         @empty
-                            <div class="p-space-md rounded-xl bg-surface-container-low text-center font-body-sm text-body-sm text-on-surface-variant">
+                            <div
+                                class="p-space-md rounded-xl bg-surface-container-low text-center font-body-sm text-body-sm text-on-surface-variant">
                                 Belum ada riwayat absensi.
                             </div>
                         @endforelse
@@ -564,7 +854,7 @@
             </div>
         </div>
 
-        {{-- ================= MODAL HASIL (ANIMASI) ================= --}}
+        {{-- ================= MODAL HASIL ================= --}}
         <div id="result-modal"
             style="display:none; position:fixed; inset:0; z-index:60; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,.45); backdrop-filter:blur(4px);">
             <div id="result-card"
@@ -572,7 +862,8 @@
                 <div class="result-icon" id="result-icon"></div>
                 <h3 class="font-headline-sm text-headline-sm text-on-surface mt-space-md" id="result-title"></h3>
                 <p class="font-body-md text-body-md text-on-surface-variant mt-1" id="result-message"></p>
-                <div class="flex flex-col gap-2 mt-space-md p-space-sm rounded-xl bg-surface-container-low text-left" id="result-details"></div>
+                <div class="flex flex-col gap-2 mt-space-md p-space-sm rounded-xl bg-surface-container-low text-left"
+                    id="result-details"></div>
                 <button type="button" id="result-btn"
                     class="mt-space-md w-full h-11 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container shadow transition-colors">
                     Selesai
@@ -585,50 +876,69 @@
 @section('extra-scripts')
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        (function() {
-            const OFFICE = @json($office);
+        (() => {
+            'use strict';
+            const OFFICES = @json($offices);
             const MAX_ACCURACY = @json($maxAccuracy);
-            const LATE_AFTER = @json($lateAfter->format('H:i:s'));
-            const MODE = '{{ $checkedIn ? 'out' : 'in' }}'; 
-            const URLS = {
-                in: @json(route('absensi.check-in')),
-                out: @json(route('absensi.check-out')),
-            };
+            const SERVER_NOW = @json(now()->getTimestamp() * 1000);
+            const LATE_DEADLINE = @json($lateAfter->getTimestamp() * 1000);
+            const SUBMIT_URL = @json(route('absensi.check-in'));
             const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
-            const POSITION_MAX_AGE = 5 * 60 * 1000; 
+
+            const INDONESIA_CENTER = [-2.5, 118];
+            const POSITION_MAX_AGE_MS = 5 * 60 * 1000;
+            const CLOCK_FORMAT = {
+                hour12: false,
+                timeZone: 'Asia/Jakarta'
+            };
             const $ = (id) => document.getElementById(id);
 
+            const clockOffset = SERVER_NOW - Date.now();
+            const serverNow = () => new Date(Date.now() + clockOffset);
+            const isPastDeadline = () => serverNow().getTime() > LATE_DEADLINE;
+            const formatClock = (date) => date.toLocaleTimeString('id-ID', CLOCK_FORMAT).replace(/\./g, ':');
+
             function tick() {
-                const now = new Date();
-                const t = now.toLocaleTimeString('id-ID', { hour12: false }).replace(/\./g, ':');
+                const now = serverNow();
+                const time = formatClock(now);
 
-                if ($('realtime-clock')) {
-                    $('realtime-clock').innerHTML =
-                        `${t} <span class="font-label-lg text-label-lg text-on-surface-variant font-medium">WIB</span>`;
+                const clock = $('realtime-clock');
+                if (clock) {
+                    clock.innerHTML =
+                        `${time} <span class="font-label-lg text-label-lg text-on-surface-variant font-medium">WIB</span>`;
                 }
-                if ($('confirm-time')) $('confirm-time').textContent = `${t} WIB`;
 
-                const cd = $('late-countdown');
-                if (cd) {
-                    const [h, m, s] = LATE_AFTER.split(':').map(Number);
-                    const limit = new Date(now);
-                    limit.setHours(h, m, s, 0);
-                    const diff = Math.floor((limit - now) / 1000);
-                    cd.textContent = diff > 0 ?
+                const confirmTime = $('confirm-time');
+                if (confirmTime) confirmTime.textContent = `${time} WIB`;
+
+                const countdown = $('late-countdown');
+                if (countdown) {
+                    const diff = Math.floor((LATE_DEADLINE - now.getTime()) / 1000);
+                    countdown.textContent = diff > 0 ?
                         `Sisa toleransi: ${Math.floor(diff / 60)} Menit ${diff % 60} Detik` :
                         'Melewati batas toleransi (akan tercatat terlambat)';
                 }
             }
+
             setInterval(tick, 1000);
             tick();
-            const resultModal = $('result-modal');
-            const resultCard = $('result-card');
-            const resultIcon = $('result-icon');
-            const resultTitle = $('result-title');
-            const resultMessage = $('result-message');
-            const resultDetails = $('result-details');
-            const resultBtn = $('result-btn');
-            let resultOnClose = null;
+            if (!$('wizard')) return;
+            const modal = {
+                root: $('result-modal'),
+                card: $('result-card'),
+                icon: $('result-icon'),
+                title: $('result-title'),
+                message: $('result-message'),
+                details: $('result-details'),
+                button: $('result-btn'),
+                onClose: null,
+            };
+
+            const ACCENTS = {
+                success: '#006857',
+                warning: '#d97706',
+                error: '#ba1a1a'
+            };
 
             const ICON_OK = `
                 <div class="result-ring"></div>
@@ -637,6 +947,7 @@
                     <circle class="result-circle" cx="26" cy="26" r="24"/>
                     <path class="result-mark" d="M14 27l8 8 16-17"/>
                 </svg>`;
+
             const ICON_ERR = `
                 <div class="result-ring"></div>
                 <svg class="result-svg" viewBox="0 0 52 52">
@@ -647,100 +958,144 @@
 
             function burstConfetti(color) {
                 const colors = [color, '#f5b942', '#4ecdc4', '#ff6b6b', '#7c83fd'];
-                for (let i = 0; i < 18; i++) {
+                const pieces = 18;
+
+                for (let i = 0; i < pieces; i++) {
+                    const angle = (Math.PI * 2 * i) / pieces + Math.random() * 0.4;
+                    const distance = 90 + Math.random() * 70;
                     const el = document.createElement('span');
-                    const angle = (Math.PI * 2 * i) / 18 + Math.random() * 0.4;
-                    const dist = 90 + Math.random() * 70;
+
                     el.className = 'confetti-piece';
                     el.style.background = colors[i % colors.length];
-                    el.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
-                    el.style.setProperty('--dy', `${Math.sin(angle) * dist * 0.8 + 20}px`);
+                    el.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
+                    el.style.setProperty('--dy', `${Math.sin(angle) * distance * 0.8 + 20}px`);
                     el.style.setProperty('--rot', `${Math.random() * 540 - 270}deg`);
-                    resultCard.appendChild(el);
+                    modal.card.appendChild(el);
                 }
             }
 
-            function showResult({ type = 'success', title, message = '', details = [], buttonText = 'Selesai', onClose = null }) {
-                const accent = { success: '#006857', warning: '#d97706', error: '#ba1a1a' }[type];
-                resultCard.style.setProperty('--accent', accent);
-                resultCard.classList.toggle('is-error', type === 'error');
-                resultCard.querySelectorAll('.confetti-piece').forEach((n) => n.remove());
+            function renderDetails(details) {
+                modal.details.innerHTML = '';
 
-                resultIcon.innerHTML = type === 'error' ? ICON_ERR : ICON_OK;
-                resultIcon.style.color = accent;
-                resultTitle.textContent = title;
-                resultMessage.textContent = message;
-                resultBtn.textContent = buttonText;
-                resultOnClose = onClose;
-
-                resultDetails.innerHTML = '';
-                details.forEach((d, i) => {
+                details.forEach(({
+                    label,
+                    value
+                }, i) => {
                     const row = document.createElement('div');
                     row.className = 'result-row flex justify-between gap-3 font-body-sm text-body-sm';
                     row.style.animationDelay = `${0.75 + i * 0.1}s`;
-                    const l = document.createElement('span');
-                    l.className = 'text-on-surface-variant';
-                    l.textContent = d.label;
-                    const v = document.createElement('span');
-                    v.className = 'font-label-md text-label-md text-on-surface text-right';
-                    v.textContent = d.value;
-                    row.append(l, v);
-                    resultDetails.appendChild(row);
+
+                    const labelEl = document.createElement('span');
+                    labelEl.className = 'text-on-surface-variant';
+                    labelEl.textContent = label;
+
+                    const valueEl = document.createElement('span');
+                    valueEl.className = 'font-label-md text-label-md text-on-surface text-right';
+                    valueEl.textContent = value;
+
+                    row.append(labelEl, valueEl);
+                    modal.details.appendChild(row);
                 });
-                resultDetails.style.display = details.length ? 'flex' : 'none';
 
-                resultCard.style.animation = 'none';
-                void resultCard.offsetWidth;
-                resultCard.style.animation = '';
+                modal.details.style.display = details.length ? 'flex' : 'none';
+            }
 
-                resultModal.style.display = 'flex';
+            let resultAutoCloseTimer = null;
+            let resultCloseTimer = null;
+
+            function showResult({
+                type = 'success',
+                title,
+                message = '',
+                details = [],
+                buttonText = 'Selesai',
+                onClose = null,
+                autoCloseMs = 0
+            }) {
+                clearTimeout(resultAutoCloseTimer);
+                clearTimeout(resultCloseTimer);
+                resultCloseTimer = null;
+
+                const accent = ACCENTS[type];
+
+                modal.card.classList.remove('is-closing');
+                modal.card.style.setProperty('--accent', accent);
+                modal.card.classList.toggle('is-error', type === 'error');
+
+                modal.card.querySelectorAll('.confetti-piece').forEach((el) => el.remove());
+
+                modal.icon.innerHTML = type === 'error' ? ICON_ERR : ICON_OK;
+                modal.icon.style.color = accent;
+                modal.title.textContent = title;
+                modal.message.textContent = message;
+                modal.button.textContent = buttonText;
+                modal.button.style.display = autoCloseMs > 0 ? 'none' : '';
+                modal.onClose = onClose;
+                renderDetails(details);
+                modal.card.style.animation = 'none';
+                void modal.card.offsetWidth;
+                modal.card.style.animation = '';
+                modal.root.style.display = 'flex';
                 if (type !== 'error') burstConfetti(accent);
-                resultBtn.focus();
+                if (autoCloseMs > 0) {
+                    resultAutoCloseTimer = setTimeout(closeResult, autoCloseMs);
+                } else {
+                    modal.button.focus();
+                }
             }
 
             function closeResult() {
-                resultModal.style.display = 'none';
-                const cb = resultOnClose;
-                resultOnClose = null;
-                if (cb) cb();
+                if (resultCloseTimer) return;
+                clearTimeout(resultAutoCloseTimer);
+                resultAutoCloseTimer = null;
+                const callback = modal.onClose;
+                modal.onClose = null;
+                modal.card.classList.add('is-closing');
+                resultCloseTimer = setTimeout(() => {
+                    modal.root.style.display = 'none';
+                    modal.card.classList.remove('is-closing');
+
+                    resultCloseTimer = null;
+
+                    if (callback) callback();
+                }, 250);
             }
 
-            resultBtn.addEventListener('click', closeResult);
-            resultModal.addEventListener('click', (e) => { if (e.target === resultModal) closeResult(); });
+            modal.button.addEventListener('click', closeResult);
+            modal.root.addEventListener('click', (e) => {
+                if (e.target === modal.root) closeResult();
+            });
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && resultModal.style.display === 'flex') closeResult();
+                if (e.key === 'Escape' && modal.root.style.display === 'flex') closeResult();
             });
 
-            if (!$('wizard')) return;
-            let step = 1;
-            let position = null; 
+            let position = null;
             let locationValid = false;
             let photoData = null;
             let stream = null;
             let map = null;
             let userMarker = null;
             let userCircle = null;
+            let stopLocating = null;
+            let flipCamera = false;
 
-            const FLIP_CAMERA = false; 
-            let flipCamera = FLIP_CAMERA;
             try {
                 const saved = localStorage.getItem('absensi_flip_camera');
                 if (saved !== null) flipCamera = saved === '1';
             } catch (_) {}
 
-            const center = OFFICE ? [OFFICE.lat, OFFICE.lng] : [-8.1543, 113.7025];
             const CHECK_SVG =
                 '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>';
 
             function goToStep(n) {
                 if (n === 2 && !locationValid) return;
                 if (n === 3 && !photoData) return;
-                step = n;
 
                 [1, 2, 3].forEach((i) => {
-                    $(`panel-${i}`).style.display = i === n ? 'flex' : 'none';
                     const dot = $(`dot-${i}`);
                     const label = $(`label-${i}`);
+
+                    $(`panel-${i}`).style.display = i === n ? 'flex' : 'none';
                     dot.classList.toggle('active', i === n);
                     dot.classList.toggle('done', i < n);
                     label.classList.toggle('active', i === n);
@@ -763,18 +1118,29 @@
                 if (n === 1 && map) setTimeout(() => map.invalidateSize(), 120);
                 if (n === 3) fillConfirm();
 
-                $('wizard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                $('wizard').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
             }
 
+            // ===== Langkah 1: lokasi =====
+            const GPS_BADGE_CLASSES = {
+                idle: 'bg-surface-container-high text-on-surface-variant',
+                loading: 'bg-secondary-fixed text-on-secondary-fixed-variant',
+                ok: 'bg-primary-fixed/40 text-on-primary-fixed-variant',
+                error: 'bg-error-container text-on-error-container',
+            };
+
+            const GEO_ERROR_MESSAGES = {
+                1: 'Izin lokasi ditolak. Aktifkan izin lokasi di browser dan layanan lokasi di sistem operasi.',
+                2: 'Lokasi tidak tersedia saat ini. Pastikan GPS/Wi-Fi aktif.',
+                3: 'Waktu permintaan lokasi habis. Coba lagi.',
+            };
+
             function setGps(state, badge, subtitle) {
-                const colors = {
-                    idle: 'bg-surface-container-high text-on-surface-variant',
-                    loading: 'bg-secondary-fixed text-on-secondary-fixed-variant',
-                    ok: 'bg-primary-fixed/40 text-on-primary-fixed-variant',
-                    error: 'bg-error-container text-on-error-container',
-                };
                 $('gps-status-badge').className =
-                    `px-space-sm py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1.5 ${colors[state]}`;
+                    `px-space-sm py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1.5 ${GPS_BADGE_CLASSES[state]}`;
                 $('gps-status-text').textContent = badge;
                 $('gps-status-subtitle').textContent = subtitle;
                 $('metric-gps-status').textContent = badge;
@@ -785,131 +1151,239 @@
                 setGps('error', 'Error Script', e.message || 'Terjadi kesalahan pada script.');
             });
 
+            const toRad = (deg) => (deg * Math.PI) / 180;
+
+            /** Haversine, hasil dalam meter. Rumus yang sama dengan di controller. */
             function distanceMeters(lat1, lng1, lat2, lng2) {
                 const R = 6371000;
-                const rad = (d) => d * Math.PI / 180;
-                const dLat = rad(lat2 - lat1);
-                const dLng = rad(lng2 - lng1);
+                const dLat = toRad(lat2 - lat1);
+                const dLng = toRad(lng2 - lng1);
                 const a = Math.sin(dLat / 2) ** 2 +
-                    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+                    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+
                 return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             }
 
-            function locateUser() {
-                locationValid = false;
-                $('btn-to-2').disabled = true;
+            /**
+             * Kantor terdekat yang radiusnya mencakup titik. Jika tidak ada,
+             * kantor terdekat saja (inside = false) untuk pesan error.
+             */
+            function nearestOffice(lat, lng) {
+                const byDistance = (a, b) => a.distance - b.distance;
+                const measured = OFFICES.map((office) => ({
+                    office,
+                    distance: distanceMeters(lat, lng, office.lat, office.lng),
+                }));
 
-                if (!OFFICE) {
-                    setGps('error', 'Belum Dikonfigurasi', 'Lokasi kantor belum diatur oleh admin.');
-                    return;
-                }
-                if (!('geolocation' in navigator)) {
-                    setGps('error', 'Tidak Didukung', 'Browser ini tidak mendukung geolokasi.');
-                    return;
-                }
-                if (!window.isSecureContext) {
-                    setGps('error', 'Koneksi Tidak Aman',
-                        'Geolokasi hanya jalan di HTTPS atau localhost. Buka lewat http://localhost:8000 atau gunakan HTTPS.');
-                    return;
-                }
+                const inside = measured.filter((m) => m.distance <= m.office.radius).sort(byDistance)[0];
+                const pick = inside ?? measured.sort(byDistance)[0];
 
-                setGps('loading', 'Mencari Lokasi…', 'Meminta izin lokasi dari browser…');
-
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    const { latitude, longitude, accuracy } = pos.coords;
-                    const dist = distanceMeters(latitude, longitude, OFFICE.lat, OFFICE.lng);
-                    const inRadius = dist <= OFFICE.radius;
-                    const accurate = accuracy <= MAX_ACCURACY;
-
-                    position = { latitude, longitude, accuracy, distance: dist, time: Date.now() };
-                    locationValid = inRadius && accurate;
-
-                    if (map) {
-                        if (userMarker) userMarker.setLatLng([latitude, longitude]);
-                        else userMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('Posisi Anda');
-
-                        if (userCircle) userCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
-                        else userCircle = L.circle([latitude, longitude], {
-                            radius: accuracy,
-                            color: '#006398',
-                            fillColor: '#006398',
-                            fillOpacity: 0.12,
-                            weight: 1
-                        }).addTo(map);
-
-                        map.fitBounds(L.latLngBounds([center, [latitude, longitude]]), {
-                            padding: [40, 40],
-                            maxZoom: 17
-                        });
-                    }
-
-                    $('metric-distance').textContent =
-                        `${Math.round(dist)} meter ${inRadius ? '(Aman)' : '(Terlalu Jauh)'}`;
-                    $('metric-accuracy').textContent = `±${Math.round(accuracy)} meter`;
-
-                    if (!inRadius) {
-                        setGps('error', 'Di Luar Radius',
-                            `Anda ${Math.round(dist)} m dari kantor (maks ${Math.round(OFFICE.radius)} m). Presensi tidak dapat dilakukan.`);
-                    } else if (!accurate) {
-                        setGps('error', 'Akurasi Rendah',
-                            `Akurasi ±${Math.round(accuracy)} m, maksimal ${MAX_ACCURACY} m. Coba di area terbuka atau gunakan HP.`);
-                    } else {
-                        setGps('ok', 'Terkunci & Valid', 'Lokasi Anda berada di dalam radius kantor. Silakan lanjut ambil swafoto.');
-                    }
-                    $('btn-to-2').disabled = !locationValid;
-                }, (err) => {
-                    const msg = {
-                        1: 'Izin lokasi ditolak. Aktifkan izin lokasi di browser dan layanan lokasi di sistem operasi.',
-                        2: 'Lokasi tidak tersedia saat ini. Pastikan GPS/Wi-Fi aktif.',
-                        3: 'Waktu permintaan lokasi habis. Coba lagi.',
-                    }[err.code] || 'Gagal mengambil lokasi.';
-                    setGps('error', 'Gagal / Ditolak', msg);
-                    $('metric-distance').textContent = '–';
-                    $('metric-accuracy').textContent = '–';
-                }, {
-                    enableHighAccuracy: true,
-                    timeout: 20000,
-                    maximumAge: 0
-                });
+                return {
+                    office: pick.office,
+                    distance: pick.distance,
+                    inside: Boolean(inside)
+                };
             }
 
-            $('btn-locate-me').addEventListener('click', locateUser);
-            $('btn-refresh-location').addEventListener('click', () => {
-                const icon = $('btn-refresh-location').querySelector('.material-symbols-outlined');
-                icon?.classList.add('animate-spin');
-                locateUser();
-                setTimeout(() => icon?.classList.remove('animate-spin'), 800);
-            });
-            $('btn-to-2').addEventListener('click', () => goToStep(2));
 
             function initMap() {
                 if (typeof L === 'undefined') {
                     $('location-map').innerHTML =
                         '<div style="padding:16px;font-size:13px">Peta gagal dimuat (Leaflet tidak ter-load). Periksa koneksi internet.</div>';
-                    console.error('Leaflet (L) tidak terdefinisi');
                     return;
                 }
 
-                map = L.map('location-map').setView(center, 16);
+                map = L.map('location-map').setView(INDONESIA_CENTER, 5);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
-                    attribution: '&copy; OpenStreetMap contributors'
+                    attribution: '&copy; OpenStreetMap contributors',
                 }).addTo(map);
-                setTimeout(() => map.invalidateSize(), 200);
 
-                if (OFFICE) {
-                    L.marker(center).addTo(map)
-                        .bindPopup(`<strong>${OFFICE.name}</strong><br>Radius geofence: ${OFFICE.radius} m`);
-                    L.circle(center, {
-                        radius: OFFICE.radius,
+                OFFICES.forEach((office) => {
+                    L.marker([office.lat, office.lng]).addTo(map)
+                        .bindPopup(`<strong>${office.name}</strong><br>Radius geofence: ${office.radius} m`);
+
+                    L.circle([office.lat, office.lng], {
+                        radius: office.radius,
                         color: '#006857',
                         fillColor: '#006857',
                         fillOpacity: 0.15,
-                        weight: 2
+                        weight: 2,
+                    }).addTo(map);
+                });
+
+                if (OFFICES.length === 1) {
+                    map.setView([OFFICES[0].lat, OFFICES[0].lng], 16);
+                } else if (OFFICES.length > 1) {
+                    const bounds = L.latLngBounds(
+                        OFFICES.map(office => [office.lat, office.lng])
+                    );
+
+                    map.fitBounds(bounds, {
+                        padding: [40, 40],
+                        maxZoom: 10,
+                    });
+                }
+
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+
+
+            function drawUserPosition({
+                latitude,
+                longitude,
+                accuracy,
+                office
+            }) {
+                if (!map) return;
+
+                if (userMarker) userMarker.setLatLng([latitude, longitude]);
+                else userMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('Posisi Anda');
+
+                if (userCircle) userCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
+                else {
+                    userCircle = L.circle([latitude, longitude], {
+                        radius: accuracy,
+                        color: '#006398',
+                        fillColor: '#006398',
+                        fillOpacity: 0.12,
+                        weight: 1,
                     }).addTo(map);
                 }
+
+                map.fitBounds(L.latLngBounds([
+                    [office.lat, office.lng],
+                    [latitude, longitude]
+                ]), {
+                    padding: [40, 40],
+                    maxZoom: 17,
+                });
             }
+
+            function onPosition({
+                coords
+            }) {
+                const {
+                    latitude,
+                    longitude,
+                    accuracy
+                } = coords;
+                const {
+                    office,
+                    distance,
+                    inside
+                } = nearestOffice(latitude, longitude);
+                const accurate = accuracy <= MAX_ACCURACY;
+
+                position = {
+                    latitude,
+                    longitude,
+                    accuracy,
+                    distance,
+                    office,
+                    time: Date.now()
+                };
+                locationValid = inside && accurate;
+
+                drawUserPosition(position);
+
+                $('metric-distance').textContent =
+                    `${Math.round(distance)} meter ${inside ? '(Aman)' : '(Terlalu Jauh)'}`;
+                $('metric-accuracy').textContent = `±${Math.round(accuracy)} meter`;
+
+                if (!inside) {
+                    setGps('error', 'Di Luar Radius',
+                        `Anda ${Math.round(distance)} m dari ${office.name} (maks ${Math.round(office.radius)} m). Presensi tidak dapat dilakukan.`
+                    );
+                } else if (!accurate) {
+                    setGps('error', 'Akurasi Rendah',
+                        `Akurasi ±${Math.round(accuracy)} m, maksimal ${MAX_ACCURACY} m. Coba di area terbuka atau gunakan HP.`
+                    );
+                } else {
+                    setGps('ok', 'Terkunci & Valid',
+                        `Lokasi Anda berada di dalam radius ${office.name}. Silakan lanjut ambil swafoto.`);
+                }
+
+                $('btn-to-2').disabled = !locationValid;
+            }
+
+            function onPositionError(err) {
+                setGps('error', 'Gagal / Ditolak', GEO_ERROR_MESSAGES[err.code] || 'Gagal mengambil lokasi.');
+                $('metric-distance').textContent = '–';
+                $('metric-accuracy').textContent = '–';
+            }
+
+            function locateUser() {
+                stopLocating?.();
+                locationValid = false;
+                $('btn-to-2').disabled = true;
+
+                if (!OFFICES.length) {
+                    return setGps('error', 'Belum Dikonfigurasi', 'Lokasi kantor belum diatur oleh admin.');
+                }
+                if (!('geolocation' in navigator)) {
+                    return setGps('error', 'Tidak Didukung', 'Browser ini tidak mendukung geolokasi.');
+                }
+                if (!window.isSecureContext) {
+                    return setGps('error', 'Koneksi Tidak Aman',
+                        'Geolokasi hanya jalan di HTTPS atau localhost. Buka lewat https:// atau http://localhost:8000.'
+                    );
+                }
+
+                setGps('loading', 'Mencari Lokasi…', 'Mengambil lokasi terbaik, tunggu beberapa detik…');
+
+                let best = null;
+                let finished = false;
+                let watchId = null;
+                let timer = null;
+
+                const stop = () => {
+                    finished = true;
+                    clearTimeout(timer);
+                    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                };
+
+                const finish = () => {
+                    if (finished) return;
+                    stop();
+                    if (best) onPosition(best);
+                    else onPositionError({
+                        code: 3
+                    });
+                };
+
+                stopLocating = stop;
+
+                watchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        if (finished) return;
+                        if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
+                        if (best.coords.accuracy <= 30) finish(); // sudah cukup akurat
+                    },
+                    (err) => {
+                        if (finished) return;
+                        stop();
+                        onPositionError(err);
+                    }, {
+                        enableHighAccuracy: true,
+                        timeout: 20000,
+                        maximumAge: 0
+                    }
+                );
+
+                timer = setTimeout(finish, 10000);
+            }
+
+            $('btn-locate-me').addEventListener('click', locateUser);
+            $('btn-refresh-location').addEventListener('click', () => {
+                const icon = $('btn-refresh-location').querySelector('.material-symbols-outlined');
+
+                icon?.classList.add('animate-spin');
+                locateUser();
+                setTimeout(() => icon?.classList.remove('animate-spin'), 800);
+            });
+            $('btn-to-2').addEventListener('click', () => goToStep(2));
 
             try {
                 initMap();
@@ -917,6 +1391,7 @@
                 console.error('Gagal membuat peta:', e);
             }
 
+            // ===== Langkah 2: swafoto =====
             const video = $('camera-preview');
             const placeholder = $('camera-placeholder');
             const canvas = $('camera-canvas');
@@ -928,6 +1403,11 @@
             const btnRetake = $('btn-retake');
             const btnTo3 = $('btn-to-3');
 
+
+            const PHOTO_WIDTH = 720;
+            const PHOTO_HEIGHT = 960;
+
+
             function setPlaceholder(icon, text) {
                 placeholder.innerHTML =
                     `<span class="material-symbols-outlined text-[36px]">${icon}</span><span>${text}</span>`;
@@ -935,13 +1415,17 @@
                 placeholder.style.display = 'flex';
             }
 
-            function applyFlip() {
+            const applyFlip = () => {
                 video.style.transform = flipCamera ? 'scaleX(-1)' : 'none';
-            }
+            };
 
             btnFlip.addEventListener('click', () => {
                 flipCamera = !flipCamera;
-                try { localStorage.setItem('absensi_flip_camera', flipCamera ? '1' : '0'); } catch (_) {}
+                try {
+                    localStorage.setItem('absensi_flip_camera', flipCamera ? '1' : '0');
+                } catch (_) {
+                    /* abaikan */
+                }
                 applyFlip();
             });
 
@@ -970,18 +1454,33 @@
                 btnTo3.style.display = 'flex';
             }
 
+            function cameraErrorMessage(error) {
+                if (error.name === 'NotAllowedError') return 'Izin kamera ditolak. Aktifkan di pengaturan browser.';
+                if (error.name === 'NotFoundError') return 'Kamera tidak ditemukan pada perangkat ini.';
+                return 'Tidak dapat mengakses kamera.';
+            }
+
             async function startCamera() {
                 if (stream) return;
                 setPlaceholder('videocam', 'Menunggu izin akses kamera…');
 
                 if (!navigator.mediaDevices?.getUserMedia) {
-                    setPlaceholder('videocam_off', 'Kamera tidak didukung browser ini (gunakan HTTPS atau localhost).');
-                    return;
+                    return setPlaceholder('videocam_off',
+                        'Kamera tidak didukung browser ini (gunakan HTTPS atau localhost).');
                 }
+
                 try {
                     stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-                        audio: false
+                        video: {
+                            facingMode: 'user',
+                            width: {
+                                ideal: 1280
+                            },
+                            height: {
+                                ideal: 720
+                            }
+                        },
+                        audio: false,
                     });
                     video.srcObject = stream;
                     applyFlip();
@@ -990,44 +1489,52 @@
                         btnCapture.disabled = false;
                     };
                 } catch (e) {
-                    const msg = e.name === 'NotAllowedError' ? 'Izin kamera ditolak. Aktifkan di pengaturan browser.' :
-                        e.name === 'NotFoundError' ? 'Kamera tidak ditemukan pada perangkat ini.' :
-                        'Tidak dapat mengakses kamera.';
-                    setPlaceholder('videocam_off', msg);
+                    setPlaceholder('videocam_off', cameraErrorMessage(e));
                 }
             }
 
             function stopCamera() {
-                stream?.getTracks().forEach((t) => t.stop());
+                stream?.getTracks().forEach((track) => track.stop());
                 stream = null;
                 video.srcObject = null;
             }
 
+            /** Crop tengah rasio 4:3, lalu kembalikan data URL JPEG. */
             function capturePhoto() {
                 if (!video.videoWidth) return null;
-                const W = 640, H = 480, target = W / H;
-                const vw = video.videoWidth, vh = video.videoHeight;
-                let sw = vw, sh = vh, sx = 0, sy = 0;
-                if (vw / vh > target) {
-                    sw = vh * target;
+
+                const targetRatio = PHOTO_WIDTH / PHOTO_HEIGHT;
+                const vw = video.videoWidth;
+                const vh = video.videoHeight;
+                let sw = vw;
+                let sh = vh;
+                let sx = 0;
+                let sy = 0;
+
+                if (vw / vh > targetRatio) {
+                    sw = vh * targetRatio;
                     sx = (vw - sw) / 2;
                 } else {
-                    sh = vw / target;
+                    sh = vw / targetRatio;
                     sy = (vh - sh) / 2;
                 }
-                canvas.width = W;
-                canvas.height = H;
+
+                canvas.width = PHOTO_WIDTH;
+                canvas.height = PHOTO_HEIGHT;
+
                 const ctx = canvas.getContext('2d');
                 if (flipCamera) {
-                    ctx.translate(W, 0);
+                    ctx.translate(PHOTO_WIDTH, 0);
                     ctx.scale(-1, 1);
                 }
-                ctx.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
-                return canvas.toDataURL('image/jpeg', 0.85);
+                ctx.drawImage(video, sx, sy, sw, sh, 0, 0, PHOTO_WIDTH, PHOTO_HEIGHT);
+
+                return canvas.toDataURL('image/jpeg', 0.75);
             }
 
             btnCapture.addEventListener('click', () => {
                 const data = capturePhoto();
+
                 if (!data) {
                     return showResult({
                         type: 'error',
@@ -1036,6 +1543,7 @@
                         buttonText: 'Mengerti',
                     });
                 }
+
                 const flash = $('shutter-flash');
                 flash.classList.remove('go');
                 void flash.offsetWidth;
@@ -1055,33 +1563,78 @@
             btnTo3.addEventListener('click', () => goToStep(3));
             $('btn-back-1').addEventListener('click', () => goToStep(1));
 
+            // ===== Langkah 3: konfirmasi & kirim =====
             function fillConfirm() {
+                const status = $('confirm-status');
+                const late = isPastDeadline();
+
                 $('confirm-photo').src = photoData;
-                $('confirm-type').textContent = MODE === 'in' ? 'Check-in' : 'Check-out';
-                $('confirm-location').textContent = OFFICE ? OFFICE.name : '–';
+                $('confirm-location').textContent = position ? position.office.name : '–';
                 $('confirm-distance').textContent = position ? `${Math.round(position.distance)} meter` : '–';
                 $('confirm-accuracy').textContent = position ? `±${Math.round(position.accuracy)} meter` : '–';
 
-                const statusRow = $('confirm-status-row');
-                if (MODE === 'in') {
-                    const [h, m, s] = LATE_AFTER.split(':').map(Number);
-                    const limit = new Date();
-                    limit.setHours(h, m, s, 0);
-                    const late = new Date() > limit;
-                    const el = $('confirm-status');
-                    el.textContent = late ? 'Terlambat' : 'Tepat Waktu';
-                    el.style.color = late ? '#ba1a1a' : '#006857';
-                    statusRow.style.display = 'flex';
-                } else {
-                    statusRow.style.display = 'none';
-                }
+                status.textContent = late ? 'Terlambat' : 'Tepat Waktu';
+                status.style.color = late ? ACCENTS.error : ACCENTS.success;
                 tick();
             }
 
             $('btn-back-2').addEventListener('click', () => goToStep(2));
 
             const submitBtn = $('btn-submit');
-            const submitHtml = submitBtn.innerHTML;
+            const submitIdleHtml = submitBtn.innerHTML;
+
+            const showSubmitting = () => {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML =
+                    '<span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span><span>Mengirim...</span>';
+            };
+
+            const resetSubmit = () => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = submitIdleHtml;
+            };
+
+            function showSubmitSuccess(data) {
+                const late = data.status === 'telat';
+
+                showResult({
+                    type: late ? 'warning' : 'success',
+                    title: late ? 'Absensi Tercatat' : 'Absensi Berhasil!',
+                    message: late ?
+                        'Kehadiran Anda tercatat terlambat.' :
+                        'Kehadiran Anda tercatat tepat waktu. Selamat bekerja!',
+                    details: [{
+                            label: 'Waktu Absensi',
+                            value: `${data.check_in} WIB`
+                        },
+                        {
+                            label: 'Status',
+                            value: late ? 'Terlambat' : 'Hadir'
+                        },
+                        {
+                            label: 'Jarak ke Kantor',
+                            value: `${data.distance} meter`
+                        },
+                        {
+                            label: 'Kantor',
+                            value: data.office || position.office.name
+                        }
+                    ],
+                    autoCloseMs: 2200,
+                    onClose: () => window.location.reload()
+                });
+            }
+
+            function showSubmitFailure(data) {
+                const firstValidationError = data.errors ? Object.values(data.errors)[0][0] : null;
+
+                showResult({
+                    type: 'error',
+                    title: 'Presensi Gagal',
+                    message: data.message || firstValidationError || 'Gagal mengirim presensi.',
+                    buttonText: 'Coba Lagi',
+                });
+            }
 
             submitBtn.addEventListener('click', async () => {
                 if (!locationValid || !position || !photoData) {
@@ -1094,7 +1647,7 @@
                     });
                 }
 
-                if (Date.now() - position.time > POSITION_MAX_AGE) {
+                if (Date.now() - position.time > POSITION_MAX_AGE_MS) {
                     return showResult({
                         type: 'error',
                         title: 'Lokasi Kedaluwarsa',
@@ -1107,12 +1660,10 @@
                     });
                 }
 
-                submitBtn.disabled = true;
-                submitBtn.innerHTML =
-                    '<span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span><span>Mengirim...</span>';
+                showSubmitting();
 
                 try {
-                    const res = await fetch(URLS[MODE], {
+                    const response = await fetch(SUBMIT_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1127,47 +1678,10 @@
                         }),
                     });
 
-                    let data = {};
-                    try { data = await res.json(); } catch (_) {}
+                    const data = await response.json().catch(() => ({}));
 
-                    if (res.ok && data.success) {
-                        if (MODE === 'in') {
-                            const late = data.status === 'telat';
-                            showResult({
-                                type: late ? 'warning' : 'success',
-                                title: late ? 'Check-in Tercatat' : 'Check-in Berhasil!',
-                                message: late ? 'Kehadiran Anda tercatat terlambat.' :
-                                    'Kehadiran Anda tercatat tepat waktu. Selamat bekerja!',
-                                details: [
-                                    { label: 'Waktu Check-in', value: `${data.check_in} WIB` },
-                                    { label: 'Status', value: late ? 'Terlambat' : 'Hadir' },
-                                    { label: 'Jarak ke Kantor', value: `${data.distance} meter` },
-                                ],
-                                buttonText: 'Lihat Status Presensi',
-                                onClose: () => window.location.reload(),
-                            });
-                        } else {
-                            showResult({
-                                type: 'success',
-                                title: 'Check-out Berhasil!',
-                                message: 'Terima kasih, sampai jumpa besok.',
-                                details: [
-                                    { label: 'Waktu Check-out', value: `${data.check_out} WIB` },
-                                    { label: 'Jarak ke Kantor', value: `${data.distance} meter` },
-                                ],
-                                buttonText: 'Selesai',
-                                onClose: () => window.location.reload(),
-                            });
-                        }
-                    } else {
-                        const firstError = data.errors ? Object.values(data.errors)[0][0] : null;
-                        showResult({
-                            type: 'error',
-                            title: 'Presensi Gagal',
-                            message: data.message || firstError || 'Gagal mengirim presensi.',
-                            buttonText: 'Coba Lagi',
-                        });
-                    }
+                    if (response.ok && data.success) showSubmitSuccess(data);
+                    else showSubmitFailure(data);
                 } catch (e) {
                     console.error(e);
                     showResult({
@@ -1177,8 +1691,7 @@
                         buttonText: 'Coba Lagi',
                     });
                 } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = submitHtml;
+                    resetSubmit();
                 }
             });
 

@@ -40,6 +40,8 @@ Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/riwayat-absensi', [RiwayatAbsensiController::class, 'index'])->name('riwayat-absensi');
+    Route::get('/riwayat-absensi/export-pdf', [RiwayatAbsensiController::class, 'exportPdf'])
+        ->name('riwayat-absensi.pdf');
 
     Route::get('/izin', [LeaveApprovalController::class, 'index'])->name('izin');
     Route::put('/izin/{leave}/setujui', [LeaveApprovalController::class, 'approve'])->name('izin.setujui');
@@ -80,7 +82,7 @@ Route::middleware('auth')->group(function () {
             return redirect()->route('admin.dashboard');
         }
 
-        $user = $request->user()->load('group');
+        $user = $request->user();
 
         $mulai   = $user->periode_mulai?->translatedFormat('d M Y');
         $selesai = $user->periode_selesai?->translatedFormat('d M Y');
@@ -115,7 +117,7 @@ Route::middleware('auth')->group(function () {
             ->orderBy('start_date')
             ->first();
 
-        $setting = \App\Models\AttendanceSetting::where('status', 'active')->first();
+        $offices = \App\Models\AttendanceSetting::where('status', 'active')->orderBy('name')->get();
 
         $totalAlpha = 0;
         $totalSakit = 0;
@@ -154,9 +156,9 @@ Route::middleware('auth')->group(function () {
             'userName'        => $user->name,
             'nim'             => $user->nim,
             'periodeMagang'   => ($mulai && $selesai) ? "$mulai – $selesai" : '-',
-            'divisi'          => $user->group?->name ?: ($user->division ?: '-'),
+            'divisi'          => $user->division ?: '-',
             'pembimbing'      => $user->mentor ?: '-',
-            'kampus'          => $user->asal_universitas ?: ($user->university ?: '-'),
+            'kampus' => $user->asal_universitas ?: '-',
             'fotoUrl'         => $user->foto ? asset('storage/' . $user->foto) : null,
             'riwayatAbsensi'  => $riwayatAbsensi,
             'totalTiket'      => $totalTiket,
@@ -171,9 +173,9 @@ Route::middleware('auth')->group(function () {
             'lastCheckIn'     => $lastCheckIn,
             'pendingLeave'    => $pendingLeave,
             'lateAfter'       => '08:15',
-            'office'          => $setting ? [
-                'name'   => $setting->name,
-                'radius' => (float) $setting->radius,
+            'office'          => $offices->isNotEmpty() ? [
+                'name'   => $offices->pluck('name')->implode(' / '),
+                'radius' => (float) $offices->min('radius'),
             ] : null,
         ]);
     })->name('dashboard');
@@ -182,8 +184,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/absensi/riwayat', [AttendanceController::class, 'riwayat'])->name('absensi.riwayat');
     Route::post('/absensi/check-in', [AttendanceController::class, 'checkIn'])
         ->middleware('throttle:10,1')->name('absensi.check-in');
-    Route::post('/absensi/check-out', [AttendanceController::class, 'checkOut'])
-        ->middleware('throttle:10,1')->name('absensi.check-out');
     Route::get('/absensi/foto/{attendance}/{type}', [AttendanceController::class, 'photo'])
         ->name('absensi.photo');
 
@@ -200,6 +200,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/tickets/{ticket}', [TicketController::class, 'update'])->name('ticket.update')->whereNumber('ticket');
     Route::patch('/tickets/{ticket}/start', [TicketController::class, 'start'])->name('ticket.start')->whereNumber('ticket');
     Route::patch('/tickets/{ticket}/complete', [TicketController::class, 'complete'])->name('ticket.complete')->whereNumber('ticket');
+    Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('admin.tickets.show');
 
     Route::get('/daily-activity', [UserDailyActivityController::class, 'index'])->name('daily-activity.index');
     Route::post('/daily-activity', [UserDailyActivityController::class, 'store'])->name('daily-activity.store');

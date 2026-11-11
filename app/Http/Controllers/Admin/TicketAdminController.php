@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Group;
 use App\Models\Ticket;
 use App\Models\User;
 use Carbon\Carbon;
@@ -38,8 +37,7 @@ class TicketAdminController extends Controller
 
         $tickets = Ticket::query()
             ->with([
-                'user:id,name,division,posko,group_id',
-                'user.group:id,name',
+                'user:id,name,division',
                 'verifier:id,name',
             ])
             ->withCount('attachments')
@@ -71,7 +69,6 @@ class TicketAdminController extends Controller
         $divisions = User::query()
             ->whereNotNull('division')->where('division', '!=', '')
             ->distinct()->pluck('division')
-            ->merge(Group::query()->pluck('name'))
             ->filter()->unique()->sort()->values();
 
         return view('admin.ticketsAdmin', [

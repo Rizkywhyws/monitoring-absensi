@@ -101,10 +101,15 @@
                     </div>
 
                     <div class="flex flex-col">
-                        <label for="group_name" class="{{ $labelClass }}">Kelompok / Divisi</label>
-                        <input type="text" id="group_name" name="group_name"
-                            value="{{ old('group_name', $user->group?->name) }}"
-                            placeholder="Masukkan kelompok / divisi" class="{{ $inputClass }}">
+                        <label for="division" class="{{ $labelClass }}">Divisi</label>
+                        <input type="text" id="division" name="division" list="daftarDivisi"
+                            value="{{ old('division', $user->division) }}" placeholder="Masukkan kelompok / divisi"
+                            class="{{ $inputClass }}">
+                        <datalist id="daftarDivisi">
+                            @foreach ($divisions as $d)
+                                <option value="{{ $d }}"></option>
+                            @endforeach
+                        </datalist>
                     </div>
 
                     <div class="flex flex-col">
@@ -139,11 +144,12 @@
                         <label for="password" class="{{ $labelClass }}">Password Baru</label>
                         <div class="relative flex items-center">
                             <input type="password" id="password" name="password"
-                                placeholder="Kosongkan jika tidak ingin mengubah password" minlength="6"
-                                maxlength="100" autocomplete="new-password" class="{{ $inputClass }} pr-12">
+                                placeholder="Kosongkan jika tidak ingin mengubah password" minlength="6" maxlength="100"
+                                autocomplete="new-password" class="{{ $inputClass }} pr-12">
                             <button type="button" id="togglePassword" aria-label="Tampilkan password"
                                 class="absolute right-2 w-9 h-9 flex items-center justify-center rounded-lg text-outline hover:text-on-surface hover:bg-surface-container transition-colors">
-                                <span class="material-symbols-outlined text-[20px]" id="togglePasswordIcon">visibility</span>
+                                <span class="material-symbols-outlined text-[20px]"
+                                    id="togglePasswordIcon">visibility</span>
                             </button>
                         </div>
                         <p class="mt-space-xs font-body-sm text-body-sm text-on-surface-variant">

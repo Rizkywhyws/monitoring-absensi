@@ -39,10 +39,38 @@
             to { opacity: 0; transform: translateY(12px) scale(.97); }
         }
 
+        /* Animasi centang */
+        .check-wrap.is-playing {
+            animation: check-pop .45s cubic-bezier(.34, 1.56, .64, 1) both;
+        }
+        .check-wrap.is-playing .check-circle {
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+            animation: check-stroke .55s cubic-bezier(.65, 0, .45, 1) forwards;
+        }
+        .check-wrap.is-playing .check-mark {
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: check-stroke .35s .5s cubic-bezier(.65, 0, .45, 1) forwards;
+        }
+
+        @keyframes check-stroke {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes check-pop {
+            0% { transform: scale(.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .modal-backdrop,
-            .modal-backdrop .modal-panel {
+            .modal-backdrop .modal-panel,
+            .check-wrap.is-playing,
+            .check-wrap.is-playing .check-circle,
+            .check-wrap.is-playing .check-mark {
                 animation: none !important;
+                stroke-dashoffset: 0 !important;
             }
         }
     </style>
@@ -61,10 +89,6 @@
                 ->implode(''),
         );
 
-        $formatSize = fn($bytes) => $bytes >= 1048576
-            ? number_format($bytes / 1048576, 1) . ' MB'
-            : max(1, round($bytes / 1024)) . ' KB';
-
         // Label + warna badge per status. Satu sumber untuk seluruh view.
         $statusMeta = [
             'to_do'       => ['label' => 'To Do',       'class' => 'bg-surface-container-high text-on-surface-variant'],
@@ -79,7 +103,7 @@
         $cardClass =
             'relative overflow-hidden rounded-xl bg-surface-container-lowest p-5 shadow-sm flex flex-col justify-between gap-4 group hover:shadow-md transition-shadow';
 
-        $ticketsData = $tickets->mapWithKeys(function ($ticket) use ($initialsOf, $formatSize, $isAdmin, $statusMeta) {
+        $ticketsData = $tickets->mapWithKeys(function ($ticket) use ($initialsOf, $isAdmin, $statusMeta) {
             $isFinished = in_array($ticket->status, \App\Models\Ticket::FINISHED, true);
             $isOwner = $ticket->user_id === auth()->id();
 
@@ -87,19 +111,11 @@
                 $ticket->id => [
                     'number' => $ticket->ticket_number,
                     'title' => $ticket->title,
-                    'description' => $ticket->description,
                     'creator' => $ticket->user->name ?? '-',
                     'initials' => $initialsOf($ticket->user->name ?? '-'),
                     'createdAt' => $ticket->created_at->translatedFormat('d M Y, H:i'),
                     'status' => $statusMeta[$ticket->status]['label'] ?? $ticket->status,
                     'canEdit' => $isAdmin || ($isOwner && ! $isFinished),
-                    'attachments' => $ticket->attachments->map(fn($attachment) => [
-                        'id' => $attachment->id,
-                        'name' => $attachment->file_name,
-                        'size' => $formatSize($attachment->file_size),
-                        'isImage' => \Illuminate\Support\Str::startsWith($attachment->file_type, 'image/'),
-                        'url' => $attachment->url,
-                    ]),
                 ],
             ];
         });
@@ -157,7 +173,7 @@
         </div>
 
         {{-- Ringkasan --}}
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
             <div class="{{ $cardClass }}">
                 <div class="flex items-center justify-between">
                     <span class="font-label-md text-label-md text-on-surface-variant font-medium">Total Penugasan</span>
@@ -199,29 +215,6 @@
                         style="width: {{ $percentOf($stats['today']) }}%"></div>
                 </div>
             </div>
-
-            <div class="{{ $cardClass }}">
-                <div class="flex items-center justify-between">
-                    <span class="font-label-md text-label-md text-on-surface-variant font-medium">Memiliki Lampiran</span>
-                    <div class="w-10 h-10 rounded-lg bg-secondary-fixed/50 flex items-center justify-center text-secondary">
-                        <span class="material-symbols-outlined text-[22px]">attach_file</span>
-                    </div>
-                </div>
-                <div class="flex items-baseline justify-between">
-                    <div>
-                        <span
-                            class="font-stat-counter text-stat-counter text-on-surface">{{ $stats['with_attachment'] }}</span>
-                        <span class="font-body-sm text-body-sm text-on-surface-variant ml-1">Tiket</span>
-                    </div>
-                    <span
-                        class="px-2 py-0.5 rounded font-label-sm text-label-sm bg-secondary-fixed/40 text-on-secondary-container font-semibold">SPK
-                        / SOP</span>
-                </div>
-                <div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
-                    <div class="bg-secondary h-full rounded-full"
-                        style="width: {{ $percentOf($stats['with_attachment']) }}%"></div>
-                </div>
-            </div>
         </div>
 
         <form method="GET" action="{{ route('tickets') }}"
@@ -256,7 +249,6 @@
                             <th class="py-3.5 px-4 font-semibold w-44">Nomor Tiket</th>
                             <th class="py-3.5 px-4 font-semibold min-w-[320px]">Detail Pekerjaan</th>
                             <th class="py-3.5 px-4 font-semibold min-w-[180px]">Pembuat</th>
-                            <th class="py-3.5 px-4 font-semibold w-32">Lampiran</th>
                             <th class="py-3.5 px-4 font-semibold text-right w-64">Aksi</th>
                         </tr>
                     </thead>
@@ -291,9 +283,6 @@
                                             class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm font-semibold {{ $meta['class'] }}">
                                             {{ $meta['label'] }}
                                         </span>
-                                        <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 max-w-xl">
-                                            {{ \Illuminate\Support\Str::limit($ticket->description, 140) }}
-                                        </p>
                                     </div>
                                 </td>
                                 <td class="py-4 px-4 align-top">
@@ -310,17 +299,6 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="py-4 px-4 align-top">
-                                    @if ($ticket->attachments_count > 0)
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">
-                                            <span class="material-symbols-outlined text-[14px]">attach_file</span>
-                                            {{ $ticket->attachments_count }} File
-                                        </span>
-                                    @else
-                                        <span class="font-body-sm text-body-sm text-outline">-</span>
-                                    @endif
-                                </td>
                                 <td class="py-4 px-4 align-top text-right">
                                     <div class="inline-flex flex-wrap items-center justify-end gap-2">
                                         @if ($canStart)
@@ -334,11 +312,11 @@
                                                 </button>
                                             </form>
                                         @elseif ($canComplete)
-                                            <form method="POST" action="{{ route('ticket.complete', $ticket) }}"
-                                                onsubmit="return confirm('Tandai tiket ini selesai?')">
+                                            <form id="complete-form-{{ $ticket->id }}" method="POST"
+                                                action="{{ route('ticket.complete', $ticket) }}">
                                                 @csrf
                                                 @method('PATCH')
-                                                <button type="submit"
+                                                <button type="button" onclick="openCompleteModal({{ $ticket->id }})"
                                                     class="inline-flex items-center gap-1 h-[34px] px-3.5 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:bg-primary-container transition-all">
                                                     <span class="material-symbols-outlined text-[16px]">check</span>
                                                     <span>Selesai</span>
@@ -364,7 +342,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="py-12 px-4 text-center">
+                                <td colspan="4" class="py-12 px-4 text-center">
                                     <div class="flex flex-col items-center gap-2">
                                         <span
                                             class="material-symbols-outlined text-[40px] text-outline-variant">confirmation_number</span>
@@ -408,10 +386,11 @@
         </div>
     </div>
 
+    {{-- Modal Detail --}}
     <div id="ticket-modal-backdrop"
         class="modal-backdrop fixed inset-0 z-50 bg-inverse-surface/50 hidden items-center justify-center p-4"
         onclick="if (event.target === this) closeTicketModal()">
-        <div class="modal-panel w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl bg-surface-container-lowest shadow-xl">
+        <div class="modal-panel w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl bg-surface-container-lowest shadow-xl">
             <div
                 class="sticky top-0 bg-surface-container-lowest flex items-start justify-between gap-space-md p-space-lg border-b border-surface-container">
                 <div class="space-y-1 min-w-0">
@@ -425,7 +404,7 @@
                 </button>
             </div>
 
-            <div class="p-space-lg space-y-space-lg">
+            <div class="p-space-lg">
                 <div class="flex items-center gap-2.5">
                     <div id="modal-initials"
                         class="w-9 h-9 rounded-full bg-primary-container/20 text-primary font-bold text-sm flex items-center justify-center shrink-0">
@@ -438,20 +417,6 @@
                     <span id="modal-status"
                         class="ml-auto px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-semibold"></span>
                 </div>
-
-                <div class="space-y-1.5">
-                    <span class="font-label-md text-label-md text-on-surface block font-medium">Deskripsi Rincian
-                        Pekerjaan &amp; SOP</span>
-                    <div id="modal-description"
-                        class="p-space-sm rounded-lg bg-surface-container-low font-body-md text-body-md text-on-surface whitespace-pre-line">
-                    </div>
-                </div>
-
-                <div class="space-y-1.5">
-                    <span class="font-label-md text-label-md text-on-surface block font-medium">Lampiran Dokumen SOP /
-                        SPK</span>
-                    <div id="modal-attachments" class="space-y-2"></div>
-                </div>
             </div>
         </div>
     </div>
@@ -460,8 +425,8 @@
     <div id="edit-modal-backdrop"
         class="modal-backdrop fixed inset-0 z-50 bg-inverse-surface/50 hidden items-center justify-center p-4"
         onclick="if (event.target === this) closeEditModal()">
-        <div class="modal-panel w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl bg-surface-container-lowest shadow-xl">
-            <form id="edit-form" method="POST" enctype="multipart/form-data">
+        <div class="modal-panel w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl bg-surface-container-lowest shadow-xl">
+            <form id="edit-form" method="POST">
                 @csrf
                 @method('PUT')
 
@@ -478,7 +443,7 @@
                     </button>
                 </div>
 
-                <div class="p-space-lg space-y-space-lg">
+                <div class="p-space-lg">
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
                             <label class="font-label-md text-label-md text-on-surface font-medium"
@@ -488,42 +453,6 @@
                         </div>
                         <input id="edit-title" name="title" type="text" maxlength="100" required
                             class="w-full h-11 px-space-sm rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm" />
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <div class="flex items-center justify-between">
-                            <label class="font-label-md text-label-md text-on-surface font-medium"
-                                for="edit-desc">Deskripsi Rincian Pekerjaan &amp; SOP</label>
-                            <span class="font-label-sm text-label-sm text-primary font-semibold">Min. 30 karakter</span>
-                        </div>
-                        <textarea id="edit-desc" name="description" rows="4" required
-                            class="w-full p-space-sm rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm resize-none"></textarea>
-                    </div>
-                    <div class="space-y-1.5">
-                        <span class="font-label-md text-label-md text-on-surface block font-medium">Lampiran Saat
-                            Ini</span>
-                        <p class="font-body-sm text-body-sm text-on-surface-variant">Centang untuk menghapus lampiran
-                            saat tiket disimpan.</p>
-                        <div id="edit-existing-attachments" class="space-y-2"></div>
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label class="font-label-md text-label-md text-on-surface block font-medium">Tambah Lampiran
-                            Baru</label>
-                        <label
-                            class="p-space-md rounded-xl bg-surface-container-low flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surface-container transition-all">
-                            <input type="file" name="attachments[]" accept=".pdf,.png,.jpg,.jpeg" multiple
-                                class="sr-only" onchange="renderNewAttachments(this.files)" />
-                            <span
-                                class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1">
-                                <span class="material-symbols-outlined text-[22px]">cloud_upload</span>
-                            </span>
-                            <span class="font-label-md text-label-md text-on-surface font-semibold">Pilih file untuk
-                                ditambahkan</span>
-                            <span class="font-body-sm text-body-sm text-on-surface-variant">PDF, PNG, JPG (Maks
-                                10MB)</span>
-                        </label>
-                        <div id="edit-new-attachments" class="space-y-1"></div>
                     </div>
                 </div>
 
@@ -541,6 +470,55 @@
             </form>
         </div>
     </div>
+
+    {{-- Modal Konfirmasi Selesai --}}
+    <div id="complete-modal-backdrop"
+        class="modal-backdrop fixed inset-0 z-50 bg-inverse-surface/50 hidden items-center justify-center p-4"
+        onclick="if (event.target === this) closeCompleteModal()">
+        <div class="modal-panel w-full max-w-sm rounded-xl bg-surface-container-lowest shadow-xl overflow-hidden">
+
+            {{-- Tahap 1: konfirmasi --}}
+            <div id="complete-confirm-state" class="p-space-xl text-center space-y-space-md">
+                <div
+                    class="w-16 h-16 mx-auto rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[34px]">help</span>
+                </div>
+                <div class="space-y-1.5">
+                    <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Selesaikan tiket ini?</h2>
+                    <p id="complete-ticket-label"
+                        class="font-label-md text-label-md text-on-surface font-semibold break-words"></p>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">
+                        Tiket akan ditandai selesai dan otomatis masuk ke rekap Daily Activity.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 pt-1">
+                    <button type="button" onclick="closeCompleteModal()"
+                        class="flex-1 h-11 rounded-lg bg-surface-container text-on-surface font-label-lg text-label-lg hover:bg-surface-container-high transition-all">
+                        Batal
+                    </button>
+                    <button type="button" id="complete-confirm-btn" onclick="confirmComplete()"
+                        class="flex-1 h-11 rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg font-bold shadow-sm hover:bg-primary transition-all active:scale-[0.98]">
+                        Ya, selesaikan
+                    </button>
+                </div>
+            </div>
+
+            {{-- Tahap 2: animasi centang --}}
+            <div id="complete-success-state" class="hidden p-space-xl text-center space-y-space-md">
+                <div id="check-wrap" class="check-wrap w-20 h-20 mx-auto">
+                    <svg viewBox="0 0 52 52" class="w-full h-full" fill="none" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle class="check-circle" cx="26" cy="26" r="25" stroke="#047857" />
+                        <path class="check-mark" d="M14 27 l8 8 l16 -16" stroke="#047857" />
+                    </svg>
+                </div>
+                <div class="space-y-1">
+                    <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Tiket selesai!</h2>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">Menyimpan dan mengalihkan...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('extra-scripts')
@@ -548,6 +526,7 @@
         const ticketsData = @json($ticketsData);
         const ticketUpdateBaseUrl = @json(url('/tickets'));
         const MODAL_CLOSE_MS = 160;
+        const CHECK_ANIMATION_MS = 1100;
 
         function showModal(el) {
             clearTimeout(el._closeTimer);
@@ -567,6 +546,7 @@
             }, MODAL_CLOSE_MS);
         }
 
+        /* ---------- Modal detail ---------- */
         const modalBackdrop = document.getElementById('ticket-modal-backdrop');
         const modalNumber = document.getElementById('modal-number');
         const modalTitle = document.getElementById('modal-title');
@@ -574,8 +554,6 @@
         const modalInitials = document.getElementById('modal-initials');
         const modalCreator = document.getElementById('modal-creator');
         const modalDate = document.getElementById('modal-date');
-        const modalDescription = document.getElementById('modal-description');
-        const modalAttachments = document.getElementById('modal-attachments');
 
         function openTicketModal(ticketId) {
             const ticket = ticketsData[ticketId];
@@ -587,35 +565,6 @@
             modalInitials.textContent = ticket.initials;
             modalCreator.textContent = ticket.creator;
             modalDate.textContent = ticket.createdAt;
-            modalDescription.textContent = ticket.description;
-
-            modalAttachments.innerHTML = '';
-            if (ticket.attachments.length === 0) {
-                modalAttachments.innerHTML =
-                    '<p class="font-body-sm text-body-sm text-on-surface-variant">Tidak ada lampiran pada tiket ini.</p>';
-            } else {
-                ticket.attachments.forEach(function(file) {
-                    const row = document.createElement('div');
-                    row.className =
-                        'p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between gap-space-sm';
-                    row.innerHTML = `
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                <span class="material-symbols-outlined text-[22px]">${file.isImage ? 'image' : 'picture_as_pdf'}</span>
-                            </div>
-                            <div class="min-w-0">
-                                <span class="font-label-md text-label-md text-on-surface font-semibold block truncate">${file.name}</span>
-                                <span class="font-body-sm text-body-sm text-on-surface-variant">${file.size}</span>
-                            </div>
-                        </div>
-                        <a href="${file.url}" target="_blank" rel="noopener" title="Lihat file"
-                            class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-primary flex items-center justify-center transition-all shrink-0">
-                            <span class="material-symbols-outlined text-[18px]">visibility</span>
-                        </a>
-                    `;
-                    modalAttachments.appendChild(row);
-                });
-            }
 
             showModal(modalBackdrop);
         }
@@ -624,14 +573,12 @@
             hideModal(modalBackdrop);
         }
 
+        /* ---------- Modal edit ---------- */
         const editBackdrop = document.getElementById('edit-modal-backdrop');
         const editForm = document.getElementById('edit-form');
         const editNumber = document.getElementById('edit-modal-number');
         const editTitleInput = document.getElementById('edit-title');
         const editTitleCount = document.getElementById('edit-title-count');
-        const editDescInput = document.getElementById('edit-desc');
-        const editExistingAttachments = document.getElementById('edit-existing-attachments');
-        const editNewAttachments = document.getElementById('edit-new-attachments');
 
         function openEditModal(ticketId) {
             const ticket = ticketsData[ticketId];
@@ -639,31 +586,10 @@
 
             editForm.action = `${ticketUpdateBaseUrl}/${ticketId}`;
             editForm.reset();
-            editNewAttachments.innerHTML = '';
 
             editNumber.textContent = '#' + ticket.number;
             editTitleInput.value = ticket.title;
             editTitleCount.textContent = ticket.title.length;
-            editDescInput.value = ticket.description;
-
-            editExistingAttachments.innerHTML = '';
-            if (ticket.attachments.length === 0) {
-                editExistingAttachments.innerHTML =
-                    '<p class="font-body-sm text-body-sm text-on-surface-variant">Belum ada lampiran.</p>';
-            } else {
-                ticket.attachments.forEach(function(file) {
-                    const row = document.createElement('label');
-                    row.className =
-                        'p-space-sm rounded-lg bg-surface-container-low flex items-center gap-3 cursor-pointer';
-                    row.innerHTML = `
-                        <input type="checkbox" name="remove_attachments[]" value="${file.id}" class="text-error focus:ring-0 rounded" />
-                        <span class="material-symbols-outlined text-[20px] text-primary">${file.isImage ? 'image' : 'picture_as_pdf'}</span>
-                        <span class="flex-1 min-w-0 font-body-sm text-body-sm text-on-surface truncate">${file.name}</span>
-                        <span class="font-body-sm text-[11px] text-on-surface-variant shrink-0">${file.size}</span>
-                    `;
-                    editExistingAttachments.appendChild(row);
-                });
-            }
 
             showModal(editBackdrop);
         }
@@ -672,24 +598,70 @@
             hideModal(editBackdrop);
         }
 
-        function renderNewAttachments(files) {
-            editNewAttachments.innerHTML = '';
-            Array.from(files).forEach(function(file) {
-                const item = document.createElement('div');
-                item.className = 'font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5';
-                item.innerHTML = `<span class="material-symbols-outlined text-[16px] text-primary">attach_file</span>${file.name}`;
-                editNewAttachments.appendChild(item);
-            });
-        }
-
         editTitleInput.addEventListener('input', function() {
             editTitleCount.textContent = editTitleInput.value.length;
         });
+
+        /* ---------- Modal konfirmasi selesai ---------- */
+        const completeBackdrop = document.getElementById('complete-modal-backdrop');
+        const completeConfirmState = document.getElementById('complete-confirm-state');
+        const completeSuccessState = document.getElementById('complete-success-state');
+        const completeLabel = document.getElementById('complete-ticket-label');
+        const completeConfirmBtn = document.getElementById('complete-confirm-btn');
+        const checkWrap = document.getElementById('check-wrap');
+
+        let completeTicketId = null;
+        let completeSubmitting = false;
+
+        function openCompleteModal(ticketId) {
+            const ticket = ticketsData[ticketId];
+            if (!ticket) return;
+
+            completeTicketId = ticketId;
+            completeSubmitting = false;
+
+            completeLabel.textContent = '#' + ticket.number + ' · ' + ticket.title;
+            completeConfirmBtn.disabled = false;
+            checkWrap.classList.remove('is-playing');
+            completeSuccessState.classList.add('hidden');
+            completeConfirmState.classList.remove('hidden');
+
+            showModal(completeBackdrop);
+        }
+
+        function closeCompleteModal() {
+            // Saat animasi berjalan dan form sedang dikirim, modal tidak boleh ditutup.
+            if (completeSubmitting) return;
+            hideModal(completeBackdrop);
+        }
+
+        function confirmComplete() {
+            if (completeSubmitting || completeTicketId === null) return;
+
+            const form = document.getElementById('complete-form-' + completeTicketId);
+            if (!form) return;
+
+            completeSubmitting = true;
+            completeConfirmBtn.disabled = true;
+
+            completeConfirmState.classList.add('hidden');
+            completeSuccessState.classList.remove('hidden');
+
+            // Paksa reflow supaya animasi centang selalu diputar ulang dari awal.
+            checkWrap.classList.remove('is-playing');
+            void checkWrap.offsetWidth;
+            checkWrap.classList.add('is-playing');
+
+            setTimeout(function() {
+                form.submit();
+            }, CHECK_ANIMATION_MS);
+        }
 
         document.addEventListener('keydown', function(event) {
             if (event.key !== 'Escape') return;
             closeTicketModal();
             closeEditModal();
+            closeCompleteModal();
         });
     </script>
 @endsection

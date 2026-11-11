@@ -10,9 +10,8 @@
         $onLeave = $todayAttendance && in_array($todayAttendance->status, ['sakit', 'izin'], true);
         $leaveLabel = $onLeave ? ($todayAttendance->status === 'sakit' ? 'Sakit' : 'Izin') : null;
         $checkedIn = $todayAttendance && !$onLeave;
-        $checkedOut = $checkedIn && $todayAttendance->check_out;
         $isLate = $checkedIn && $todayAttendance->status === 'telat';
-        $lateAfter = $lateAfter ?? '08:15';
+        $lateAfter = $lateAfter ?? '08:00';
         $office = $office ?? null;
         $lastCheckIn = $lastCheckIn ?? null;
         $pendingLeave = $pendingLeave ?? null;
@@ -156,11 +155,6 @@
                             class="px-space-xs py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-bold flex items-center gap-1">
                             <span class="w-2 h-2 rounded-full bg-secondary"></span> {{ $leaveLabel }} Disetujui
                         </span>
-                    @elseif ($checkedOut)
-                        <span
-                            class="px-space-xs py-1 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant font-label-sm text-label-sm font-bold flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-primary"></span> Selesai
-                        </span>
                     @elseif ($checkedIn)
                         <span
                             class="px-space-xs py-1 rounded-full font-label-sm text-label-sm font-bold flex items-center gap-1 {{ $isLate ? 'bg-error-container text-on-error-container' : 'bg-primary-fixed/40 text-on-primary-fixed-variant' }}">
@@ -181,7 +175,7 @@
                             Normal</span>
                         <span class="font-label-md text-label-md text-on-surface font-bold">08:00 – 17:00
                             WIB</span>
-                        <span class="font-label-sm text-label-sm text-outline">Toleransi s/d {{ $lateAfter }}</span>
+                        <span class="font-label-sm text-label-sm text-outline">Tepat waktu s/d {{ $lateAfter }}</span>
                     </div>
                     <div class="p-space-xs rounded-lg bg-surface-container-low flex flex-col gap-0.5">
                         <span class="font-label-sm text-label-sm text-on-surface-variant">Lokasi Target</span>
@@ -204,37 +198,22 @@
                         <span class="material-symbols-outlined text-[18px] mt-0.5">event_available</span>
                         <div class="flex flex-col">
                             <span class="font-label-sm text-label-sm font-bold">{{ $leaveLabel }} disetujui admin</span>
-                            <span class="font-body-sm text-body-sm">Tidak perlu check-in maupun check-out hari ini.</span>
+                            <span class="font-body-sm text-body-sm">Tidak perlu absensi hari ini.</span>
                         </div>
                     </div>
                 @elseif ($checkedIn)
-                    <div class="grid grid-cols-2 gap-space-xs">
-                        <div class="p-space-xs rounded-lg bg-primary-fixed/20 flex flex-col gap-0.5">
-                            <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
-                                <span class="material-symbols-outlined text-primary text-[14px]">login</span> Check-in
+                    <div class="p-space-xs rounded-lg bg-primary-fixed/20 flex flex-col gap-0.5">
+                        <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+                            <span class="material-symbols-outlined text-primary text-[14px]">login</span> Check-in
+                        </span>
+                        <span class="font-label-md text-label-md text-on-surface font-bold font-mono">
+                            {{ $todayAttendance->check_in->format('H:i') }} WIB
+                        </span>
+                        @if (!is_null($todayAttendance->check_in_distance))
+                            <span class="font-label-sm text-label-sm text-outline">
+                                {{ round($todayAttendance->check_in_distance) }} m dari kantor
                             </span>
-                            <span
-                                class="font-label-md text-label-md text-on-surface font-bold font-mono">{{ $todayAttendance->check_in->format('H:i') }}
-                                WIB</span>
-                            @if (!is_null($todayAttendance->check_in_distance))
-                                <span
-                                    class="font-label-sm text-label-sm text-outline">{{ round($todayAttendance->check_in_distance) }}
-                                    m dari kantor</span>
-                            @endif
-                        </div>
-                        <div class="p-space-xs rounded-lg bg-surface-container-low flex flex-col gap-0.5">
-                            <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
-                                <span class="material-symbols-outlined text-secondary text-[14px]">logout</span> Check-out
-                            </span>
-                            @if ($checkedOut)
-                                <span
-                                    class="font-label-md text-label-md text-on-surface font-bold font-mono">{{ $todayAttendance->check_out->format('H:i') }}
-                                    WIB</span>
-                            @else
-                                <span class="font-label-md text-label-md text-on-surface-variant font-semibold">Belum
-                                    check-out</span>
-                            @endif
-                        </div>
+                        @endif
                     </div>
                 @else
                     @if ($pendingLeave)
@@ -283,18 +262,12 @@
                         <span class="material-symbols-outlined text-[20px]">event_available</span>
                         <span>Tidak perlu presensi hari ini</span>
                     </div>
-                @elseif ($checkedOut)
+                @elseif ($checkedIn)
                     <div
                         class="w-full py-3 px-space-md rounded-xl bg-primary-fixed/30 text-on-primary-fixed-variant font-label-lg text-label-lg font-bold flex items-center justify-center gap-space-xs">
                         <span class="material-symbols-outlined text-[20px]">task_alt</span>
                         <span>Presensi Hari Ini Selesai</span>
                     </div>
-                @elseif ($checkedIn)
-                    <a href="{{ route('absensi') }}"
-                        class="w-full py-3 px-space-md rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-space-xs">
-                        <span class="material-symbols-outlined text-[20px]">logout</span>
-                        <span>Check-out Sekarang</span>
-                    </a>
                 @else
                     <a href="{{ route('absensi') }}"
                         class="w-full py-3 px-space-md rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-space-xs">
@@ -461,14 +434,12 @@
 
                 {{-- Tabel --}}
                 <div class="overflow-x-auto rounded-xl">
-                    <table class="w-full text-left border-collapse min-w-[640px]">
+                    <table class="w-full text-left border-collapse min-w-[480px]">
                         <thead>
                             <tr
                                 class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
                                 <th class="px-space-sm py-space-xs font-bold">Tanggal</th>
                                 <th class="px-space-sm py-space-xs font-bold">Check-in</th>
-                                <th class="px-space-sm py-space-xs font-bold">Check-out</th>
-                                <th class="px-space-sm py-space-xs font-bold">Durasi</th>
                                 <th class="px-space-sm py-space-xs font-bold">Jarak dari Kantor</th>
                                 <th class="px-space-sm py-space-xs font-bold">Status</th>
                             </tr>
@@ -484,10 +455,6 @@
                                     $isLeave = in_array($absen->status, ['sakit', 'izin'], true);
                                     $tanggal = \Illuminate\Support\Carbon::parse($absen->attendance_date);
                                     $in = $absen->check_in ? \Illuminate\Support\Carbon::parse($absen->check_in) : null;
-                                    $out = $absen->check_out
-                                        ? \Illuminate\Support\Carbon::parse($absen->check_out)
-                                        : null;
-                                    $durasi = $in && $out ? $in->diff($out)->format('%hj %im') : '-';
                                 @endphp
                                 <tr
                                     class="border-b border-surface-container hover:bg-surface-container-low transition-colors">
@@ -500,7 +467,7 @@
                                     </td>
 
                                     @if ($isLeave)
-                                        <td colspan="4" class="px-space-sm py-space-xs text-on-surface-variant">
+                                        <td colspan="2" class="px-space-sm py-space-xs text-on-surface-variant">
                                             <span class="flex items-center gap-1.5">
                                                 <span class="material-symbols-outlined text-[16px]">event_available</span>
                                                 Tidak masuk, {{ strtolower($status['label']) }} disetujui admin
@@ -508,11 +475,8 @@
                                         </td>
                                     @else
                                         <td class="px-space-sm py-space-xs font-mono">
-                                            {{ $in ? $in->format('H:i') . ' WIB' : '-' }}</td>
-                                        <td class="px-space-sm py-space-xs font-mono">
-                                            {{ $out ? $out->format('H:i') . ' WIB' : ($tanggal->isToday() ? 'Belum check-out' : 'Tidak check-out') }}
+                                            {{ $in ? $in->format('H:i') . ' WIB' : '-' }}
                                         </td>
-                                        <td class="px-space-sm py-space-xs">{{ $durasi }}</td>
                                         <td class="px-space-sm py-space-xs">
                                             <span class="flex items-center gap-1 text-on-surface-variant">
                                                 <span class="material-symbols-outlined text-[14px]">near_me</span>
@@ -532,7 +496,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-space-sm py-space-lg text-center text-outline">
+                                    <td colspan="4" class="px-space-sm py-space-lg text-center text-outline">
                                         Belum ada riwayat absensi.
                                     </td>
                                 </tr>
