@@ -15,11 +15,6 @@ class UpdateTicketRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:100'],
-            'description' => ['required', 'string', 'min:30'],
-            'attachments' => ['nullable', 'array'],
-            'attachments.*' => ['file', 'mimes:pdf,png,jpg,jpeg', 'max:10240'], // 10 MB
-            'remove_attachments' => ['nullable', 'array'],
-            'remove_attachments.*' => ['integer'],
         ];
     }
 

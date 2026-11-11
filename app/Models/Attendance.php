@@ -5,21 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class Attendance extends Model
 {
-    /** Sesuaikan dengan nilai kolom `status` di database kamu. */
     public const STATUS_LABELS = [
-        'hadir'     => 'Hadir',
-        'terlambat' => 'Terlambat',
-        'izin'      => 'Izin',
-        'sakit'     => 'Sakit',
-        'alpa'      => 'Alpa',
+        'hadir' => 'Hadir',
+        'telat' => 'Terlambat',
+        'izin'  => 'Izin',
+        'sakit' => 'Sakit',
     ];
 
     protected $fillable = [
         'user_id',
+        'attendance_setting_id',
         'attendance_date',
         'check_in',
         'check_in_latitude',
@@ -27,27 +25,16 @@ class Attendance extends Model
         'check_in_accuracy',
         'check_in_distance',
         'check_in_photo',
-        'check_out',
-        'check_out_latitude',
-        'check_out_longitude',
-        'check_out_accuracy',
-        'check_out_distance',
-        'check_out_photo',
         'status',
+        'leave_request_id',
     ];
-
     protected $casts = [
-        'attendance_date' => 'date',
-        'check_in' => 'datetime',
-        'check_out' => 'datetime',
-        'check_in_latitude' => 'float',
+        'attendance_date'    => 'date',
+        'check_in'           => 'datetime',
+        'check_in_latitude'  => 'float',
         'check_in_longitude' => 'float',
-        'check_in_accuracy' => 'float',
-        'check_in_distance' => 'float',
-        'check_out_latitude' => 'float',
-        'check_out_longitude' => 'float',
-        'check_out_accuracy' => 'float',
-        'check_out_distance' => 'float',
+        'check_in_accuracy'  => 'float',
+        'check_in_distance'  => 'float',
     ];
 
     public function user(): BelongsTo
@@ -55,6 +42,10 @@ class Attendance extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function office(): BelongsTo
+    {
+        return $this->belongsTo(AttendanceSetting::class, 'attendance_setting_id');
+    }
 
     public function scopeBetweenDates(Builder $query, string $from, string $to): Builder
     {
@@ -66,24 +57,8 @@ class Attendance extends Model
         return self::STATUS_LABELS[$this->status] ?? ucfirst((string) $this->status ?: '-');
     }
 
-    public function getWorkDurationAttribute(): ?string
-    {
-        if (!$this->check_in || !$this->check_out) {
-            return null;
-        }
-
-        $minutes = (int) abs($this->check_in->diffInMinutes($this->check_out));
-
-        return intdiv($minutes, 60) . ' j ' . ($minutes % 60) . ' m';
-    }
-
     public function getCheckInPhotoUrlAttribute(): ?string
     {
-        return $this->check_in_photo ? Storage::disk('public')->url($this->check_in_photo) : null;
-    }
-
-    public function getCheckOutPhotoUrlAttribute(): ?string
-    {
-        return $this->check_out_photo ? Storage::disk('public')->url($this->check_out_photo) : null;
+        return $this->check_in_photo ? route('absensi.photo', [$this, 'in']) : null;
     }
 }

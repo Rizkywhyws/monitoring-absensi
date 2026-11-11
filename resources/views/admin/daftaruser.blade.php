@@ -68,9 +68,10 @@
                 <button type="button" role="tab" id="tabKelompok" data-tab="kelompok" aria-controls="panelKelompok"
                     aria-selected="false" class="{{ $tabBase }}">
                     Kelompok / Divisi
+                    Divisi
                     <span
                         class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
-                        {{ $groups->count() }}
+                        {{ $divisions->count() }}
                     </span>
                 </button>
 
@@ -82,26 +83,39 @@
 
             <div id="panelUser" role="tabpanel" aria-labelledby="tabUser">
                 <div class="p-space-lg bg-surface-bright">
+
                     <form action="{{ route('admin.daftar-user') }}" method="GET"
                         class="flex flex-wrap items-center gap-space-sm">
-                        @if (request('divisi'))
-                            <input type="hidden" name="divisi" value="{{ request('divisi') }}">
-                        @endif
+
                         <input type="text" name="keyword" value="{{ request('keyword') }}"
                             placeholder="Cari nama, NIM, atau email..."
-                            class="flex-1 min-w-[240px] bg-surface-container-low rounded-xl px-space-md py-3 font-body-md text-body-md text-on-surface outline-none focus:bg-surface-container transition-colors">
-                        <select name="periode"
-                            class="min-w-[200px] bg-surface-container-low rounded-xl px-space-md py-3 font-body-md text-body-md text-on-surface outline-none">
-                            <option value="">Semua Periode</option>
-                            @foreach ($periodeLabel as $val => $label)
-                                <option value="{{ $val }}" @selected(request('periode') == $val)>{{ $label }}
+                            class="flex-1 min-w-[220px] bg-surface-container-low rounded-xl px-space-md py-3 font-body-md text-body-md text-on-surface outline-none focus:bg-surface-container transition-colors">
+
+                        <select name="divisi"
+                            class="min-w-[180px] bg-surface-container-low rounded-xl px-space-md py-3 font-body-md text-body-md text-on-surface outline-none">
+                            <option value="">Semua Divisi</option>
+                            @foreach ($divisions as $nama => $total)
+                                <option value="{{ $nama }}" @selected(request('divisi') == $nama)>
+                                    {{ $nama }} ({{ $total }})
                                 </option>
                             @endforeach
                         </select>
+
+                        <select name="periode"
+                            class="min-w-[180px] bg-surface-container-low rounded-xl px-space-md py-3 font-body-md text-body-md text-on-surface outline-none">
+                            <option value="">Semua Periode</option>
+                            @foreach ($periodeLabel as $val => $label)
+                                <option value="{{ $val }}" @selected(request('periode') == $val)>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+
                         <button type="submit"
                             class="px-space-md py-3 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-semibold hover:bg-primary-container transition-colors">
                             Filter
                         </button>
+
                         <a href="{{ route('admin.daftar-user') }}"
                             class="px-space-md py-3 rounded-xl bg-surface-container text-on-surface font-label-lg text-label-lg font-semibold hover:bg-surface-container-high transition-colors">
                             Reset
@@ -161,9 +175,9 @@
                                     <td class="px-space-md py-space-sm border-b border-surface-container">
                                         {{ $user->mentor ?? '-' }}</td>
                                     <td class="px-space-md py-space-sm border-b border-surface-container">
-                                        @if ($user->group)
+                                        @if ($user->division)
                                             <span
-                                                class="inline-block px-space-xs py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-md text-label-md font-bold whitespace-nowrap">{{ $user->group->name }}</span>
+                                                class="inline-block px-space-xs py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-md text-label-md font-bold whitespace-nowrap">{{ $user->division }}</span>
                                         @else
                                             -
                                         @endif
@@ -286,11 +300,33 @@
                 @endif
             </div>
 
+
             <div id="panelKelompok" role="tabpanel" aria-labelledby="tabKelompok" class="hidden">
-                <div class="p-space-lg bg-surface-bright font-body-md text-body-md text-on-surface-variant">
-                    Daftar kelompok / divisi aktif beserta jumlah pesertanya. Klik
-                    <strong class="text-on-surface">Lihat Peserta</strong> untuk menyaring daftar user berdasarkan
-                    kelompok.
+                <div
+                    class="p-space-lg bg-surface-bright flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+                    <div class="font-body-md text-body-md text-on-surface-variant">
+                        Daftar divisi beserta jumlah pesertanya. Klik
+                        <strong class="text-on-surface">Lihat Peserta</strong>
+                        untuk menyaring daftar user berdasarkan divisi.
+                    </div>
+
+                    <div class="flex items-center gap-space-sm shrink-0">
+                        <label for="filterDivision"
+                            class="font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
+                            Filter Divisi
+                        </label>
+
+                        <select id="filterDivision"
+                            class="min-w-[180px] bg-surface-container-low rounded-xl px-space-md py-3 font-body-md text-body-md text-on-surface outline-none focus:bg-surface-container">
+                            <option value="all">Semua Divisi</option>
+
+                            @foreach ($divisions as $nama => $total)
+                                <option value="{{ $loop->index }}">
+                                    {{ $nama }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -298,33 +334,32 @@
                         <thead>
                             <tr
                                 class="bg-surface-container-low text-left text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
-                                @foreach (['Kelompok / Divisi', 'Deskripsi', 'Jumlah Peserta', 'Status', 'Aksi'] as $th)
-                                    <th class="px-space-md py-space-sm whitespace-nowrap">{{ $th }}</th>
+                                @foreach (['Divisi', 'Jumlah Peserta', 'Aksi'] as $th)
+                                    <th class="px-space-md py-space-sm whitespace-nowrap">
+                                        {{ $th }}
+                                    </th>
                                 @endforeach
                             </tr>
                         </thead>
-                        <tbody>
-                            @forelse ($groups as $group)
-                                <tr
+
+                        <tbody id="divisionTableBody">
+                            @forelse ($divisions as $nama => $total)
+                                <tr data-division-index="{{ $loop->index }}"
                                     class="hover:bg-surface-bright transition-colors font-body-md text-body-md text-on-surface">
+
                                     <td class="px-space-md py-space-sm border-b border-surface-container">
                                         <span
-                                            class="inline-block px-space-xs py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-md text-label-md font-bold whitespace-nowrap">{{ $group->name }}</span>
+                                            class="inline-block px-space-xs py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-md text-label-md font-bold whitespace-nowrap">
+                                            {{ $nama }}
+                                        </span>
                                     </td>
-                                    <td
-                                        class="px-space-md py-space-sm border-b border-surface-container text-on-surface-variant">
-                                        {{ $group->description ?: '-' }}
-                                    </td>
+
                                     <td class="px-space-md py-space-sm border-b border-surface-container font-semibold">
-                                        {{ $jumlahPeserta[$group->id] ?? 0 }} peserta
+                                        {{ $total }} peserta
                                     </td>
+
                                     <td class="px-space-md py-space-sm border-b border-surface-container">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-space-xs py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-md text-label-md font-bold">●
-                                            Aktif</span>
-                                    </td>
-                                    <td class="px-space-md py-space-sm border-b border-surface-container">
-                                        <a href="{{ route('admin.daftar-user', ['divisi' => $group->name]) }}"
+                                        <a href="{{ route('admin.daftar-user', ['divisi' => $nama]) }}"
                                             class="inline-flex items-center gap-space-xs px-space-sm py-2 rounded-lg bg-surface-container-low text-primary hover:bg-primary hover:text-on-primary font-label-md text-label-md font-bold transition-colors whitespace-nowrap">
                                             <span class="material-symbols-outlined text-[18px]">group</span>
                                             <span>Lihat Peserta</span>
@@ -333,12 +368,21 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5"
+                                    <td colspan="3"
                                         class="px-space-md py-space-2xl text-center text-on-surface-variant font-body-md text-body-md">
-                                        Belum ada kelompok / divisi. Kelompok dibuat otomatis saat menambah user.
+                                        Belum ada divisi. Divisi dibuat otomatis saat menambah user.
                                     </td>
                                 </tr>
                             @endforelse
+
+                            @if ($divisions->isNotEmpty())
+                                <tr id="divisionEmptyState" style="display:none;">
+                                    <td colspan="3"
+                                        class="px-space-md py-space-2xl text-center text-on-surface-variant font-body-md text-body-md">
+                                        Tidak ada divisi yang ditemukan.
+                                    </td>
+                                </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -358,6 +402,36 @@
                 user: document.getElementById('panelUser'),
                 kelompok: document.getElementById('panelKelompok')
             };
+
+            const filterDivision = document.getElementById('filterDivision');
+
+            if (filterDivision) {
+                filterDivision.addEventListener('change', function() {
+                    const selected = this.value;
+
+                    const rows = document.querySelectorAll('[data-division-index]');
+                    const emptyState = document.getElementById('divisionEmptyState');
+
+                    let visibleCount = 0;
+
+                    rows.forEach(row => {
+                        const match =
+                            selected === 'all' ||
+                            row.dataset.divisionIndex === selected;
+
+                        row.style.display = match ? '' : 'none';
+
+                        if (match) {
+                            visibleCount++;
+                        }
+                    });
+
+                    if (emptyState) {
+                        emptyState.style.display =
+                            visibleCount === 0 ? '' : 'none';
+                    }
+                });
+            }
 
             let current = null;
 

@@ -4,68 +4,71 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\AttendanceSetting;
+use App\Models\LeaveRequest;
+use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
 {
-    private const LATE_AFTER = '08:15:00';
+    private const LATE_AFTER = '08:00:00';
     private const MAX_ACCURACY_METERS = 100;
     private const MAX_PHOTO_BYTES = 2097152;
-    private const PHOTO_MAX_WIDTH = 800;  
-    private const PHOTO_QUALITY   = 70;   
-
+    private const PHOTO_MAX_WIDTH = 800;
+    private const PHOTO_QUALITY = 70;
+    private const EARTH_RADIUS_METERS = 6371000;
+    private const STATUS_ON_TIME = 'hadir';
+    private const STATUS_LATE    = 'telat';
+    private const MSG_ALREADY_CHECKED_IN = 'Anda sudah melakukan absensi hari ini.';
     private const MONTHS = [
-        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        1 => 'Januari',
+        2 => 'Februari',
+        3 => 'Maret',
+        4 => 'April',
+        5 => 'Mei',
+        6 => 'Juni',
+        7 => 'Juli',
+        8 => 'Agustus',
+        9 => 'September',
+        10 => 'Oktober',
+        11 => 'November',
+        12 => 'Desember',
     ];
 
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $user = $request->user();
 
-        $todayAttendance = Attendance::where('user_id', $user->id)
-            ->whereDate('attendance_date', today())
-            ->first();
-
-        $recentAttendances = Attendance::where('user_id', $user->id)
-            ->orderByDesc('attendance_date')
-            ->limit(5)
-            ->get();
-
-        $mentorInitials = Str::of((string) $user->mentor)
-            ->explode(' ')
-            ->filter()
-            ->take(2)
-            ->map(fn ($part) => Str::upper(Str::substr($part, 0, 1)))
-            ->implode('');
-
-        $setting = AttendanceSetting::where('status', 'active')->first();
-
         return view('user.absensi', [
-            'attendanceSetting' => $setting,
-            'office' => $setting ? [
-                'name'   => $setting->name,
-                'lat'    => (float) $setting->latitude,
-                'lng'    => (float) $setting->longitude,
-                'radius' => (float) $setting->radius,
-            ] : null,
-            'todayAttendance' => $todayAttendance,
-            'recentAttendances' => $recentAttendances,
-            'pembimbing' => $user->mentor,
-            'pembimbingInitials' => $mentorInitials ?: '-',
-            'lateAfter' => now()->setTimeFromTimeString(self::LATE_AFTER),
-            'maxAccuracy' => self::MAX_ACCURACY_METERS,
+            'offices'            => $this->officesForMap(),
+            'todayAttendance'    => Attendance::where('user_id', $user->id)
+                ->whereDate('attendance_date', today())
+                ->first(),
+            'recentAttendances'  => Attendance::where('user_id', $user->id)
+                ->orderByDesc('attendance_date')
+                ->limit(5)
+                ->get(),
+            'pendingLeave'       => LeaveRequest::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->whereDate('end_date', '>=', today())
+                ->orderBy('start_date')
+                ->first(),
+            'pembimbing'         => $user->mentor,
+            'pembimbingInitials' => $this->initials((string) $user->mentor),
+            'lateAfter'          => $this->lateDeadline(now()),
+            'maxAccuracy'        => self::MAX_ACCURACY_METERS,
         ]);
     }
 
-    public function riwayat(Request $request)
+    public function riwayat(Request $request): View
     {
         $user = $request->user();
 
@@ -84,72 +87,32 @@ class AttendanceController extends Controller
 
         $monthQuery = Attendance::where('user_id', $user->id)
             ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()]);
-        $monthRecords = (clone $monthQuery)->get(['id', 'attendance_date', 'check_in', 'check_out', 'status']);
-        $completed = $monthRecords->filter(
-            fn ($a) => in_array($a->status, ['hadir', 'telat'], true) && $a->check_in && $a->check_out
-        );
-        $avgMinutes = $completed->isNotEmpty()
-            ? (int) round($completed->avg(
-                fn ($a) => ($a->check_out->getTimestamp() - $a->check_in->getTimestamp()) / 60
-            ))
-            : null;
 
-        $hadir = $monthRecords->where('status', 'hadir')->count();
-        $telat = $monthRecords->where('status', 'telat')->count();
-        $sakit = $monthRecords->where('status', 'sakit')->count();
-        $izin  = $monthRecords->where('status', 'izin')->count();
+        $monthRecords = (clone $monthQuery)->get(['id', 'attendance_date', 'status']);
+        $counts       = $monthRecords->countBy('status');
+        $firstDate    = Attendance::where('user_id', $user->id)->min('attendance_date');
+        $alphaDates   = $this->missedWorkdays($user, $firstDate, $start, $end, $monthRecords);
 
-        $firstDate = Attendance::where('user_id', $user->id)->min('attendance_date');
-        $joinedAt  = $user->periode_mulai
-            ? $user->periode_mulai->copy()->startOfDay()
-            : ($firstDate ? Carbon::parse($firstDate)->startOfDay() : null);
-
-        $alphaDates = [];
-
-        if ($joinedAt) {
-            $from = $start->copy();
-            if ($joinedAt->gt($from)) {
-                $from = $joinedAt->copy();
-            }
-
-            $to = $end->copy()->startOfDay();
-            $yesterday = today()->subDay();
-            if ($to->gt($yesterday)) {
-                $to = $yesterday;           
-            }
-            if ($user->periode_selesai && $user->periode_selesai->copy()->startOfDay()->lt($to)) {
-                $to = $user->periode_selesai->copy()->startOfDay();
-            }
-
-            $recorded = $monthRecords
-                ->map(fn ($a) => $a->attendance_date->toDateString())
-                ->all();
-
-            for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
-                if ($d->isWeekday() && ! in_array($d->toDateString(), $recorded, true)) {
-                    $alphaDates[] = $d->copy();
-                }
-            }
-        }
+        $hadir = $counts->get(self::STATUS_ON_TIME, 0);
+        $telat = $counts->get(self::STATUS_LATE, 0);
 
         $summary = [
-            'total'       => $hadir + $telat,   
+            'total'       => $hadir + $telat,
             'hadir'       => $hadir,
             'telat'       => $telat,
-            'sakit'       => $sakit,
-            'izin'        => $izin,
+            'sakit'       => $counts->get('sakit', 0),
+            'izin'        => $counts->get('izin', 0),
             'alpha'       => count($alphaDates),
-            'avg_minutes' => $avgMinutes,
+            'avg_minutes' => null,
         ];
 
         $attendances = (clone $monthQuery)
-            ->when($status && $status !== 'alpha', fn ($q) => $q->where('status', $status))
+            ->when($status && $status !== 'alpha', fn($q) => $q->where('status', $status))
             ->orderByDesc('attendance_date')
             ->paginate(10)
             ->withQueryString();
 
-        $minYear = $firstDate ? (int) Carbon::parse($firstDate)->year : now()->year;
-        $years   = range(now()->year, min($minYear, now()->year));
+        $firstYear = $firstDate ? Carbon::parse($firstDate)->year : now()->year;
 
         return view('user.riwayatAbsensi', [
             'attendances' => $attendances,
@@ -158,7 +121,7 @@ class AttendanceController extends Controller
             'month'       => $month,
             'year'        => $year,
             'status'      => $status,
-            'years'       => $years,
+            'years'       => range(now()->year, min($firstYear, now()->year)),
             'months'      => self::MONTHS,
         ]);
     }
@@ -167,117 +130,54 @@ class AttendanceController extends Controller
     {
         $data = $this->validatedPayload($request);
         $user = $request->user();
-        $today = today()->toDateString();
 
-        $alreadyCheckedIn = Attendance::where('user_id', $user->id)
-            ->whereDate('attendance_date', $today)
-            ->exists();
-
-        if ($alreadyCheckedIn) {
-            return $this->fail('Anda sudah melakukan check-in hari ini.');
+        if ($this->hasAttendance($user, today())) {
+            return $this->fail(self::MSG_ALREADY_CHECKED_IN);
         }
 
-        [$distance, $locationError] = $this->validateLocation($data);
-        if ($locationError) {
-            return $this->fail($locationError);
-        }
+        ['office' => $office, 'distance' => $distance] = $this->verifyLocation($data);
+        $photoPath = $this->storePhoto($data['photo'], $user->id);
 
-        $path = $this->storePhoto($data['photo'], $user->id, 'in');
-        if (! $path) {
-            return $this->fail('Foto tidak valid atau lebih dari 2 MB.');
-        }
-
-        $now = now();
-        $status = $now->lte(now()->setTimeFromTimeString(self::LATE_AFTER)) ? 'hadir' : 'telat';
+        $now    = now();
+        $status = $now->lte($this->lateDeadline($now)) ? self::STATUS_ON_TIME : self::STATUS_LATE;
 
         try {
             $attendance = Attendance::create([
-                'user_id' => $user->id,
-                'attendance_date' => $today,
-                'check_in' => $now,
-                'check_in_latitude' => $data['latitude'],
-                'check_in_longitude' => $data['longitude'],
-                'check_in_accuracy' => $data['accuracy'],
-                'check_in_distance' => $distance,
-                'check_in_photo' => $path,
-                'status' => $status,
+                'user_id'               => $user->id,
+                'attendance_setting_id' => $office->id,
+                'attendance_date'       => today()->toDateString(),
+                'check_in'              => $now,
+                'check_in_latitude'     => $data['latitude'],
+                'check_in_longitude'    => $data['longitude'],
+                'check_in_accuracy'     => $data['accuracy'],
+                'check_in_distance'     => $distance,
+                'check_in_photo'        => $photoPath,
+                'status'                => $status,
             ]);
-        } catch (UniqueConstraintViolationException $e) {
-            Storage::disk('local')->delete($path);
+        } catch (UniqueConstraintViolationException) {
+            Storage::disk('local')->delete($photoPath);
 
-            return $this->fail('Anda sudah melakukan check-in hari ini.');
+            return $this->fail(self::MSG_ALREADY_CHECKED_IN);
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Check-in berhasil.',
-            'status' => $status,
+            'success'  => true,
+            'message'  => 'Absensi berhasil.',
+            'status'   => $status,
             'check_in' => $attendance->check_in->format('H:i:s'),
             'distance' => round($distance),
-        ]);
-    }
-
-    public function checkOut(Request $request): JsonResponse
-    {
-        $data = $this->validatedPayload($request);
-        $user = $request->user();
-
-        $attendance = Attendance::where('user_id', $user->id)
-            ->whereDate('attendance_date', today())
-            ->first();
-
-        if (! $attendance) {
-            return $this->fail('Anda belum melakukan check-in hari ini.');
-        }
-
-        if ($attendance->check_out) {
-            return $this->fail('Anda sudah melakukan check-out hari ini.');
-        }
-
-        [$distance, $locationError] = $this->validateLocation($data);
-        if ($locationError) {
-            return $this->fail($locationError);
-        }
-
-        $path = $this->storePhoto($data['photo'], $user->id, 'out');
-        if (! $path) {
-            return $this->fail('Foto tidak valid atau lebih dari 2 MB.');
-        }
-
-        $updated = Attendance::where('id', $attendance->id)
-            ->whereNull('check_out')
-            ->update([
-                'check_out' => now(),
-                'check_out_latitude' => $data['latitude'],
-                'check_out_longitude' => $data['longitude'],
-                'check_out_accuracy' => $data['accuracy'],
-                'check_out_distance' => $distance,
-                'check_out_photo' => $path,
-                'updated_at' => now(),
-            ]);
-
-        if (! $updated) {
-            Storage::disk('local')->delete($path);
-
-            return $this->fail('Anda sudah melakukan check-out hari ini.');
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Check-out berhasil.',
-            'check_out' => $attendance->fresh()->check_out->format('H:i:s'),
-            'distance' => round($distance),
+            'office'   => $office->name,
         ]);
     }
 
     public function photo(Request $request, Attendance $attendance, string $type): StreamedResponse
     {
-        abort_unless(in_array($type, ['in', 'out'], true), 404);
+        abort_unless($type === 'in', 404);
 
         $user = $request->user();
         abort_unless($user->role === 'admin' || $attendance->user_id === $user->id, 403);
 
-        $path = $type === 'in' ? $attendance->check_in_photo : $attendance->check_out_photo;
+        $path = $attendance->check_in_photo;
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
         return Storage::disk('local')->response($path);
@@ -286,40 +186,64 @@ class AttendanceController extends Controller
     private function validatedPayload(Request $request): array
     {
         return $request->validate([
-            'photo' => ['required', 'string', 'max:3000000'],
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'photo'     => ['required', 'string', 'max:3000000'],
+            'latitude'  => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'accuracy' => ['required', 'numeric', 'min:0'],
+            'accuracy'  => ['required', 'numeric', 'min:0'],
         ]);
     }
 
-    private function validateLocation(array $data): array
+    /**
+     * Pastikan koordinat berada di radius salah satu kantor aktif.
+     * Koordinat kantor selalu dibaca dari tabel attendance_settings.
+     *
+     * @return array{office: AttendanceSetting, distance: float}
+     */
+    private function verifyLocation(array $data): array
     {
-        $setting = AttendanceSetting::where('status', 'active')->first();
+        $offices = AttendanceSetting::where('status', 'active')->get();
 
-        if (! $setting) {
-            return [null, 'Lokasi kantor belum dikonfigurasi. Hubungi admin.'];
+        if ($offices->isEmpty()) {
+            $this->reject('Lokasi kantor belum dikonfigurasi. Hubungi admin.');
         }
 
         if ((float) $data['accuracy'] > self::MAX_ACCURACY_METERS) {
-            return [null, 'Akurasi GPS terlalu rendah (±' . round($data['accuracy']) . ' m, maksimal ' . self::MAX_ACCURACY_METERS . ' m). Coba di area terbuka atau gunakan ponsel.'];
+            $this->reject(sprintf(
+                'Akurasi GPS terlalu rendah (±%d m, maksimal %d m). Coba di area terbuka atau gunakan ponsel.',
+                (int) round($data['accuracy']),
+                self::MAX_ACCURACY_METERS
+            ));
         }
 
-        $distance = $this->calculateDistance(
-            (float) $data['latitude'],
-            (float) $data['longitude'],
-            (float) $setting->latitude,
-            (float) $setting->longitude
-        );
+        $measured = $offices->map(fn(AttendanceSetting $office) => [
+            'office'   => $office,
+            'distance' => $this->distanceInMeters(
+                (float) $data['latitude'],
+                (float) $data['longitude'],
+                (float) $office->latitude,
+                (float) $office->longitude
+            ),
+        ]);
 
-        if ($distance > (float) $setting->radius) {
-            return [$distance, 'Anda berada ' . round($distance) . ' m dari kantor. Batas radius ' . round($setting->radius) . ' m, sehingga absensi ditolak.'];
+        $match = $measured
+            ->filter(fn(array $m) => $m['distance'] <= (float) $m['office']->radius)
+            ->sortBy('distance')
+            ->first();
+
+        if (! $match) {
+            $nearest = $measured->sortBy('distance')->first();
+
+            $this->reject(sprintf(
+                'Anda berada %d m dari %s. Batas radius %d m, sehingga absensi ditolak.',
+                (int) round($nearest['distance']),
+                $nearest['office']->name,
+                (int) round((float) $nearest['office']->radius)
+            ));
         }
 
-        return [$distance, null];
+        return $match;
     }
-
-    private function storePhoto(string $base64, int $userId, string $type): ?string
+    private function storePhoto(string $base64, int $userId): string
     {
         if (str_contains($base64, ',')) {
             $base64 = explode(',', $base64, 2)[1];
@@ -328,18 +252,18 @@ class AttendanceController extends Controller
         $binary = base64_decode($base64, true);
 
         if ($binary === false || $binary === '' || strlen($binary) > self::MAX_PHOTO_BYTES) {
-            return null;
+            $this->rejectInvalidPhoto();
         }
 
         $info = @getimagesizefromstring($binary);
 
         if ($info === false || $info['mime'] !== 'image/jpeg') {
-            return null;
+            $this->rejectInvalidPhoto();
         }
 
         $binary = $this->compressJpeg($binary, (int) $info[0], (int) $info[1]);
 
-        $path = 'attendance_photos/' . $userId . '/' . $type . '_' . Str::uuid() . '.jpg';
+        $path = sprintf('attendance_photos/%d/%s.jpg', $userId, Str::uuid());
         Storage::disk('local')->put($path, $binary);
 
         return $path;
@@ -352,13 +276,17 @@ class AttendanceController extends Controller
         }
 
         $image = @imagecreatefromstring($binary);
+
         if (! $image) {
             return $binary;
         }
 
         if ($width > self::PHOTO_MAX_WIDTH) {
-            $newHeight = (int) round($height * self::PHOTO_MAX_WIDTH / $width);
-            $resized = imagescale($image, self::PHOTO_MAX_WIDTH, $newHeight);
+            $resized = imagescale(
+                $image,
+                self::PHOTO_MAX_WIDTH,
+                (int) round($height * self::PHOTO_MAX_WIDTH / $width)
+            );
 
             if ($resized) {
                 imagedestroy($image);
@@ -371,27 +299,114 @@ class AttendanceController extends Controller
         $compressed = ob_get_clean();
         imagedestroy($image);
 
-        if ($compressed !== false && $compressed !== '' && strlen($compressed) < strlen($binary)) {
-            return $compressed;
-        }
-
-        return $binary;
+        return ($compressed !== false && $compressed !== '' && strlen($compressed) < strlen($binary))
+            ? $compressed
+            : $binary;
     }
 
-    private function fail(string $message, int $status = 422): JsonResponse
+    /** Haversine. */
+    private function distanceInMeters(float $latFrom, float $lonFrom, float $latTo, float $lonTo): float
     {
-        return response()->json(['success' => false, 'message' => $message], $status);
-    }
-
-    private function calculateDistance(float $latFrom, float $lonFrom, float $latTo, float $lonTo): float
-    {
-        $earthRadius = 6371000;
         $dLat = deg2rad($latTo - $latFrom);
         $dLon = deg2rad($lonTo - $lonFrom);
 
         $a = sin($dLat / 2) ** 2
             + cos(deg2rad($latFrom)) * cos(deg2rad($latTo)) * sin($dLon / 2) ** 2;
 
-        return $earthRadius * 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return self::EARTH_RADIUS_METERS * 2 * atan2(sqrt($a), sqrt(1 - $a));
+    }
+    private function hasAttendance(User $user, Carbon $date): bool
+    {
+        return Attendance::where('user_id', $user->id)
+            ->whereDate('attendance_date', $date)
+            ->exists();
+    }
+
+    private function lateDeadline(Carbon $reference): Carbon
+    {
+        return $reference->copy()->setTimeFromTimeString(self::LATE_AFTER);
+    }
+
+    /** @return Collection<int, array{id: int, name: string, lat: float, lng: float, radius: float}> */
+    private function officesForMap(): Collection
+    {
+        return AttendanceSetting::where('status', 'active')
+            ->orderBy('name')
+            ->get()
+            ->map(fn(AttendanceSetting $office) => [
+                'id'     => $office->id,
+                'name'   => $office->name,
+                'lat'    => (float) $office->latitude,
+                'lng'    => (float) $office->longitude,
+                'radius' => (float) $office->radius,
+            ])
+            ->values();
+    }
+
+    private function initials(string $name): string
+    {
+        $initials = Str::of($name)
+            ->explode(' ')
+            ->filter()
+            ->take(2)
+            ->map(fn($part) => Str::upper(Str::substr($part, 0, 1)))
+            ->implode('');
+
+        return $initials ?: '-';
+    }
+
+    /**
+     * Hari kerja (Senin-Jumat) tanpa catatan absensi, dihitung sejak mulai magang
+     * sampai kemarin atau akhir periode magang, mana yang lebih dulu.
+     *
+     * @param  Collection<int, Attendance> $records catatan absensi bulan tersebut
+     * @return list<Carbon>
+     */
+    private function missedWorkdays(User $user, ?string $firstDate, Carbon $monthStart, Carbon $monthEnd, Collection $records): array
+    {
+        $joinedAt = $user->periode_mulai?->copy()->startOfDay()
+            ?? ($firstDate ? Carbon::parse($firstDate)->startOfDay() : null);
+
+        if (! $joinedAt) {
+            return [];
+        }
+
+        $from = $monthStart->copy()->max($joinedAt);
+        $to   = $monthEnd->copy()->startOfDay()->min(today()->subDay());
+
+        if ($user->periode_selesai) {
+            $to = $to->min($user->periode_selesai->copy()->startOfDay());
+        }
+
+        $recorded = $records
+            ->map(fn(Attendance $a) => $a->attendance_date->toDateString())
+            ->all();
+
+        $missed = [];
+
+        for ($day = $from->copy(); $day->lte($to); $day->addDay()) {
+            if ($day->isWeekday() && ! in_array($day->toDateString(), $recorded, true)) {
+                $missed[] = $day->copy();
+            }
+        }
+
+        return $missed;
+    }
+
+    private function fail(string $message, int $status = 422): JsonResponse
+    {
+        return response()->json(['success' => false, 'message' => $message], $status);
+    }
+    private function reject(string $message): never
+    {
+        throw new HttpResponseException($this->fail($message));
+    }
+
+    private function rejectInvalidPhoto(): never
+    {
+        $this->reject(sprintf(
+            'Foto tidak valid atau lebih dari %d MB.',
+            intdiv(self::MAX_PHOTO_BYTES, 1024 * 1024)
+        ));
     }
 }

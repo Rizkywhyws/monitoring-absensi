@@ -3,31 +3,31 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Group;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class DaftarUserController extends Controller
 {
-    private const ROLE_PESERTA = 'user';
+    private const ROLES_PESERTA = ['user', 'peserta_pkl'];
+    private const ROLE_BARU = 'user';
+    private const UNITS = ['KP Jember', 'KP Probolinggo'];
 
     public function index(Request $request)
     {
         $today = today();
 
-        $query = User::with('group:id,name')
-            ->where('role', self::ROLE_PESERTA);
+        $query = User::whereIn('role', self::ROLES_PESERTA);
 
         if ($request->filled('keyword')) {
-            $keyword = trim($request->keyword);
+            $like = '%' . addcslashes(trim($request->keyword), '%_\\') . '%';
 
-            $query->where(function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('nim', 'like', "%{$keyword}%")
-                    ->orWhere('email', 'like', "%{$keyword}%");
+            $query->where(function ($q) use ($like) {
+                $q->where('name', 'like', $like)
+                    ->orWhere('nim', 'like', $like)
+                    ->orWhere('email', 'like', $like);
             });
         }
 
@@ -47,20 +47,15 @@ class DaftarUserController extends Controller
         }
 
         if ($request->filled('divisi')) {
-            $divisi = trim($request->divisi);
-
-            $query->whereHas('group', function ($q) use ($divisi) {
-                $q->where('name', 'like', "%{$divisi}%");
-            });
+            $like = '%' . addcslashes(trim($request->divisi), '%_\\') . '%';
+            $query->where('division', 'like', $like);
         }
 
         if (
             $request->filled('periode') &&
             preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $request->periode)
         ) {
-            $awal = Carbon::createFromFormat('!Y-m', $request->periode)
-                ->startOfMonth();
-
+            $awal = Carbon::createFromFormat('!Y-m', $request->periode)->startOfMonth();
             $akhir = $awal->copy()->endOfMonth();
 
             $query->whereBetween('periode_mulai', [
@@ -74,175 +69,86 @@ class DaftarUserController extends Controller
             ->paginate(6)
             ->withQueryString();
 
-        $groups = Group::select('id', 'name')
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get();
+        // [nama divisi => jumlah peserta], dipakai untuk filter dan saran.
+        $divisions = $this->divisionCounts();
 
-        $jumlahPeserta = User::where('role', self::ROLE_PESERTA)
-            ->whereNotNull('group_id')
-            ->select('group_id')
-            ->selectRaw('COUNT(*) as total')
-            ->groupBy('group_id')
-            ->pluck('total', 'group_id');
-
-        $periodeOptions = User::where('role', self::ROLE_PESERTA)
+        $periodeOptions = User::whereIn('role', self::ROLES_PESERTA)
             ->whereNotNull('periode_mulai')
-            ->selectRaw(
-                "DATE_FORMAT(periode_mulai, '%Y-%m') as ym, COUNT(*) as total"
-            )
+            ->selectRaw("DATE_FORMAT(periode_mulai, '%Y-%m') as ym, COUNT(*) as total")
             ->groupByRaw("DATE_FORMAT(periode_mulai, '%Y-%m')")
             ->orderByDesc('ym')
             ->pluck('total', 'ym');
 
-        return view('admin.daftaruser', compact(
-            'users',
-            'groups',
-            'jumlahPeserta',
-            'periodeOptions'
-        ));
+        return view('admin.daftaruser', compact('users', 'divisions', 'periodeOptions'));
     }
 
     public function tambah()
     {
-        $groups = Group::select('id', 'name')
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get();
+        $divisions = $this->divisionCounts()->keys();
 
-        return view('admin.tambahuser', compact('groups'));
+        return view('admin.tambahuser', compact('divisions'));
     }
 
     public function simpan(Request $request)
     {
-        $validated = $request->validate([
-            'namaLengkap' => ['required', 'string', 'max:150'],
-
-            'nimMahasiswa' => [
-                'required',
-                'string',
-                'max:30',
-                'unique:users,nim',
-            ],
-
-            'asalUniversitas' => [
-                'required',
-                'string',
-                'max:150',
-            ],
-
-            'emailPribadi' => [
-                'required',
-                'email',
-                'max:150',
-                'unique:users,email_pribadi',
-                'unique:users,email',
-            ],
-
-            'nomorTelepon' => [
-                'required',
-                'string',
-                'max:20',
-            ],
-
-            'kelompokDivisi' => [
-                'required',
-                'string',
-                'max:100',
-            ],
-
-            'mentor' => [
-                'required',
-                'string',
-                'max:150',
-            ],
-
-            'password' => [
-                'required',
-                'string',
-                'min:6',
-                'max:100',
-            ],
-
-            'tanggalMulai' => [
-                'required',
-                'date',
-            ],
-
-            'tanggalSelesai' => [
-                'required',
-                'date',
-                'after_or_equal:tanggalMulai',
-            ],
-
-            'unitRayon' => [
-                'required',
-                Rule::in([
-                    'KP Jember',
-                ]),
-            ],
-        ], [
-            'nimMahasiswa.unique' =>
-                'NIM ini sudah terdaftar di sistem.',
-
-            'emailPribadi.unique' =>
-                'Email ini sudah terdaftar di sistem.',
-
-            'tanggalSelesai.after_or_equal' =>
-                'Tanggal selesai tidak boleh sebelum tanggal mulai.',
-
-            'kelompokDivisi.required' =>
-                'Kelompok/Divisi Penugasan wajib diisi.',
-
-            'mentor.required' =>
-                'Nama Mentor wajib diisi.',
-
-            'password.required' =>
-                'Password wajib diisi.',
-
-            'password.min' =>
-                'Password minimal 6 karakter.',
+        $request->merge([
+            'emailPribadi' => strtolower(trim((string) $request->input('emailPribadi'))),
         ]);
 
-        $nomorTelepon = '+62' . ltrim(
-            preg_replace('/[^0-9]/', '', $validated['nomorTelepon']),
-            '0'
-        );
+        $validated = $request->validate([
+            'namaLengkap'     => ['required', 'string', 'max:150'],
+            'nimMahasiswa'    => ['required', 'string', 'max:30', 'unique:users,nim'],
+            'asalUniversitas' => ['required', 'string', 'max:150'],
+            'emailPribadi'    => ['required', 'email', 'max:150', 'unique:users,email_pribadi', 'unique:users,email'],
+            'nomorTelepon'    => [
+                'required', 'string', 'max:25',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if (! preg_match('/^\+62\d{8,13}$/', $this->normalizePhone($value))) {
+                        $fail('Nomor telepon tidak valid (8–13 digit setelah +62).');
+                    }
+                },
+            ],
+            'kelompokDivisi'  => ['required', 'string', 'max:100'],
+            'mentor'          => ['required', 'string', 'max:150'],
+            'password'        => ['required', 'string', 'min:6', 'max:100'],
+            'tanggalMulai'    => ['required', 'date'],
+            'tanggalSelesai'  => ['required', 'date', 'after_or_equal:tanggalMulai'],
+            'unitRayon'       => ['required', Rule::in(self::UNITS)],
+        ], [
+            'nimMahasiswa.unique'           => 'NIM ini sudah terdaftar di sistem.',
+            'emailPribadi.unique'           => 'Email ini sudah terdaftar di sistem.',
+            'tanggalSelesai.after_or_equal' => 'Tanggal selesai tidak boleh sebelum tanggal mulai.',
+            'kelompokDivisi.required'       => 'Divisi wajib diisi.',
+            'mentor.required'               => 'Nama Mentor wajib diisi.',
+            'password.required'             => 'Password wajib diisi.',
+            'password.min'                  => 'Password minimal 6 karakter.',
+            'unitRayon.in'                  => 'Unit / Rayon tidak valid.',
+        ]);
 
-        $emailLogin = strtolower(trim($validated['emailPribadi']));
+        $nomorTelepon = $this->normalizePhone($validated['nomorTelepon']);
+        $emailLogin = $validated['emailPribadi'];
 
-        DB::transaction(function () use ($validated, $nomorTelepon, $emailLogin) {
-            $group = Group::firstOrCreate(
-                [
-                    'name' => trim($validated['kelompokDivisi']),
-                ],
-                [
-                    'description' => null,
-                    'status' => 'active',
-                ]
-            );
+        $status = Carbon::parse($validated['tanggalSelesai'])->lt(today())
+            ? 'inactive'
+            : 'active';
 
-            $status = Carbon::parse($validated['tanggalSelesai'])->lt(today())
-                ? 'inactive'
-                : 'active';
-
-            User::create([
-                'name' => $validated['namaLengkap'],
-                'nim' => $validated['nimMahasiswa'],
-                'asal_universitas' => $validated['asalUniversitas'],
-                'email_pribadi' => $emailLogin,
-                'nomor_telepon' => $nomorTelepon,
-                'group_id' => $group->id,
-                'periode_mulai' => $validated['tanggalMulai'],
-                'periode_selesai' => $validated['tanggalSelesai'],
-                'unit_rayon' => $validated['unitRayon'],
-                'mentor' => $validated['mentor'],
-                'email' => $emailLogin,
-                'password' => $validated['password'], 
-                'role' => self::ROLE_PESERTA,
-                'status' => $status,
-            ]);
-        });
+        User::create([
+            'name'             => $validated['namaLengkap'],
+            'nim'              => $validated['nimMahasiswa'],
+            'asal_universitas' => $validated['asalUniversitas'],
+            'nomor_telepon'    => $nomorTelepon,
+            'no_hp'            => $nomorTelepon,
+            'division'         => $this->canonicalDivision($validated['kelompokDivisi']),
+            'email_pribadi'    => $emailLogin,
+            'email'            => $emailLogin,
+            'periode_mulai'    => $validated['tanggalMulai'],
+            'periode_selesai'  => $validated['tanggalSelesai'],
+            'unit_rayon'       => $validated['unitRayon'],
+            'mentor'           => $validated['mentor'],
+            'password'         => Hash::make($validated['password']),
+            'role'             => self::ROLE_BARU,
+            'status'           => $status,
+        ]);
 
         return redirect()
             ->route('admin.daftar-user')
@@ -254,87 +160,37 @@ class DaftarUserController extends Controller
 
     public function detail($id)
     {
-        $user = User::with('group:id,name')
-            ->where('role', self::ROLE_PESERTA)
-            ->findOrFail($id);
+        $user = $this->findPeserta($id);
 
         return view('admin.detail-user', compact('user'));
     }
 
     public function edit($id)
     {
-        $user = User::with('group:id,name')
-            ->where('role', self::ROLE_PESERTA)
-            ->findOrFail($id);
+        $user = $this->findPeserta($id);
+        $divisions = $this->divisionCounts()->keys();
 
-        $groups = Group::select('id', 'name')
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get();
-
-        return view('admin.edit-user', compact('user', 'groups'));
+        return view('admin.edit-user', compact('user', 'divisions'));
     }
 
     public function update(Request $request, $id)
     {
-        $user = User::where('role', self::ROLE_PESERTA)
-            ->findOrFail($id);
+        $user = $this->findPeserta($id);
+
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
 
         $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
-            'nim' => [
-                'required',
-                'string',
-                'max:30',
-                'unique:users,nim,' . $id,
-            ],
-
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                'unique:users,email,' . $id,
-            ],
-
-            'mentor' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'group_name' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-
-            'periode_mulai' => [
-                'nullable',
-                'date',
-            ],
-
-            'periode_selesai' => [
-                'nullable',
-                'date',
-                'after_or_equal:periode_mulai',
-            ],
-
-            'status' => [
-                'required',
-                'in:active,inactive',
-            ],
-
-            'password' => [
-                'nullable',
-                'string',
-                'min:6',
-                'max:100',
-            ],
+            'name'            => ['required', 'string', 'max:255'],
+            'nim'             => ['required', 'string', 'max:30', Rule::unique('users', 'nim')->ignore($user->id)],
+            'email'           => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'mentor'          => ['nullable', 'string', 'max:150'],
+            'division'        => ['nullable', 'string', 'max:100'],
+            'periode_mulai'   => ['nullable', 'date'],
+            'periode_selesai' => ['nullable', 'date', 'after_or_equal:periode_mulai'],
+            'status'          => ['required', 'in:active,inactive'],
+            'password'        => ['nullable', 'string', 'min:6', 'max:100'],
         ]);
 
         $status = $validated['status'];
@@ -346,35 +202,21 @@ class DaftarUserController extends Controller
             $status = 'inactive';
         }
 
-        $groupId = null;
-
-        if (!empty($validated['group_name'])) {
-            $group = Group::firstOrCreate(
-                [
-                    'name' => trim($validated['group_name']),
-                ],
-                [
-                    'description' => null,
-                    'status' => 'active',
-                ]
-            );
-
-            $groupId = $group->id;
-        }
-
         $data = [
-            'name' => $validated['name'],
-            'nim' => $validated['nim'],
-            'email' => strtolower(trim($validated['email'])),
-            'mentor' => $validated['mentor'] ?? null,
-            'group_id' => $groupId,
-            'periode_mulai' => $validated['periode_mulai'] ?? null,
+            'name'            => $validated['name'],
+            'nim'             => $validated['nim'],
+            'email'           => $validated['email'],
+            'mentor'          => $validated['mentor'] ?? null,
+            'division'        => filled($validated['division'] ?? null)
+                ? $this->canonicalDivision($validated['division'])
+                : null,
+            'periode_mulai'   => $validated['periode_mulai'] ?? null,
             'periode_selesai' => $validated['periode_selesai'] ?? null,
-            'status' => $status,
+            'status'          => $status,
         ];
 
         if (!empty($validated['password'])) {
-            $data['password'] = $validated['password']; 
+            $data['password'] = Hash::make($validated['password']);
         }
 
         $user->update($data);
@@ -386,40 +228,31 @@ class DaftarUserController extends Controller
 
     public function ubahKelompok(Request $request, $id)
     {
-        $user = User::where('role', self::ROLE_PESERTA)
-            ->findOrFail($id);
+        $user = $this->findPeserta($id);
 
         $validated = $request->validate([
-            'group_id' => [
-                'required',
-                'exists:groups,id',
-            ],
+            'division' => ['required', 'string', 'max:100'],
         ]);
 
         $user->update([
-            'group_id' => $validated['group_id'],
+            'division' => $this->canonicalDivision($validated['division']),
         ]);
 
         return redirect()
             ->route('admin.daftar-user')
-            ->with('success', 'Kelompok user berhasil diubah.');
+            ->with('success', 'Divisi user berhasil diubah.');
     }
 
     public function resetPassword(Request $request, $id)
     {
-        $user = User::where('role', self::ROLE_PESERTA)
-            ->findOrFail($id);
+        $user = $this->findPeserta($id);
 
         $validated = $request->validate([
-            'password' => [
-                'required',
-                'min:6',
-                'confirmed',
-            ],
+            'password' => ['required', 'min:6', 'confirmed'],
         ]);
 
         $user->update([
-            'password' => $validated['password'], 
+            'password' => Hash::make($validated['password']),
         ]);
 
         return redirect()
@@ -429,12 +262,7 @@ class DaftarUserController extends Controller
 
     public function nonaktifkan($id)
     {
-        $user = User::where('role', self::ROLE_PESERTA)
-            ->findOrFail($id);
-
-        $user->update([
-            'status' => 'inactive',
-        ]);
+        $this->findPeserta($id)->update(['status' => 'inactive']);
 
         return redirect()
             ->route('admin.daftar-user')
@@ -443,46 +271,67 @@ class DaftarUserController extends Controller
 
     public function aktifkan($id)
     {
-        $user = User::where('role', self::ROLE_PESERTA)
-            ->findOrFail($id);
+        $user = $this->findPeserta($id);
 
-        if (
-            $user->periode_selesai &&
-            $user->periode_selesai->lt(today())
-        ) {
-            $user->update([
-                'status' => 'inactive',
-            ]);
+        if ($user->periode_selesai && $user->periode_selesai->lt(today())) {
+            $user->update(['status' => 'inactive']);
 
             return redirect()
                 ->route('admin.daftar-user')
-                ->with(
-                    'error',
-                    'User tidak dapat diaktifkan karena periode PKL sudah berakhir.'
-                );
+                ->with('error', 'User tidak dapat diaktifkan karena periode PKL sudah berakhir.');
         }
 
-        $user->update([
-            'status' => 'active',
-        ]);
+        $user->update(['status' => 'active']);
 
         return redirect()
             ->route('admin.daftar-user')
-            ->with(
-                'success',
-                'Akun user berhasil diaktifkan kembali.'
-            );
+            ->with('success', 'Akun user berhasil diaktifkan kembali.');
     }
 
     public function hapus($id)
     {
-        $user = User::where('role', self::ROLE_PESERTA)
-            ->findOrFail($id);
-
-        $user->delete();
+        $this->findPeserta($id)->delete();
 
         return redirect()
             ->route('admin.daftar-user')
             ->with('success', 'User berhasil dihapus.');
+    }
+
+    private function findPeserta($id): User
+    {
+        return User::whereIn('role', self::ROLES_PESERTA)->findOrFail($id);
+    }
+
+    private function divisionCounts()
+    {
+        return User::whereIn('role', self::ROLES_PESERTA)
+            ->whereNotNull('division')
+            ->where('division', '!=', '')
+            ->selectRaw('division, COUNT(*) as total')
+            ->groupBy('division')
+            ->orderBy('division')
+            ->pluck('total', 'division');
+    }
+
+    /**
+     * Rapikan spasi, lalu pakai ejaan yang sudah ada di DB bila cocok
+     * (collation *_ci tidak membedakan huruf besar/kecil).
+     */
+    private function canonicalDivision(string $input): string
+    {
+        $name = preg_replace('/\s+/', ' ', trim($input));
+
+        return User::whereIn('role', self::ROLES_PESERTA)
+            ->where('division', $name)
+            ->value('division') ?? $name;
+    }
+
+    private function normalizePhone(string $input): string
+    {
+        $digits = preg_replace('/\D/', '', $input);
+        $digits = preg_replace('/^(62)+/', '', $digits);
+        $digits = ltrim($digits, '0');
+
+        return '+62' . $digits;
     }
 }

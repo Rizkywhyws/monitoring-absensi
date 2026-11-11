@@ -5,36 +5,70 @@
 
 @section('content')
     @php
-        $input = 'w-full pl-11 pr-4 py-2.5 rounded-lg bg-surface-container-low placeholder:text-outline focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary shadow-sm';
+        $input =
+            'w-full pl-11 pr-4 py-2.5 rounded-lg bg-surface-container-low placeholder:text-outline focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary shadow-sm';
         $iconCls = 'material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[20px]';
 
         $units = [
             'KP Jember' => 'Kantor Perwakilan (KP) Jember',
-            'KP Banyuwangi' => 'Kantor Perwakilan (KP) Banyuwangi',
             'KP Probolinggo' => 'Kantor Perwakilan (KP) Probolinggo',
-            'SBU Surabaya' => 'Kantor SBU Regional Jawa Timur - Ketintang Surabaya',
         ];
 
         $sections = [
             [
-                'no' => '01', 'title' => 'Informasi Peserta PKL',
+                'no' => '01',
+                'title' => 'Informasi Peserta PKL',
                 'desc' => 'Data identitas mahasiswa dan kontak peserta',
-                'bar' => 'bg-primary', 'badge' => 'bg-primary-fixed text-on-primary-fixed',
+                'bar' => 'bg-primary',
+                'badge' => 'bg-primary-fixed text-on-primary-fixed',
                 'fields' => [
                     ['namaLengkap', 'Nama Lengkap', 'badge', 'text', 'Contoh: Budi Santoso', 3],
                     ['nimMahasiswa', 'NIM / ID Mahasiswa', 'pin', 'text', 'Contoh: 22053460012', 1],
-                    ['asalUniversitas', 'Asal Universitas / Institusi', 'account_balance', 'text', 'Contoh: Universitas Jember', 1],
+                    [
+                        'asalUniversitas',
+                        'Asal Universitas / Institusi',
+                        'account_balance',
+                        'text',
+                        'Contoh: Universitas Jember',
+                        1,
+                    ],
                     ['emailPribadi', 'Email Kampus / Pribadi', 'alternate_email', 'email', 'nama@student.ac.id', 1],
                     ['nomorTelepon', 'Nomor WhatsApp / Telepon', 'call', 'tel', '812-3456-7890', 1],
-                    ['password', 'Password / Sandi', 'lock', 'password', 'Minimal 6 karakter', 1, 'Password ini digunakan peserta untuk login ke sistem.'],
-                    ['kelompokDivisi', 'Kelompok / Divisi Penugasan', 'lan', 'list', 'Contoh: Install', 1, 'Pilih dari saran agar penulisan nama kelompok seragam.'],
-                    ['mentor', 'Nama Mentor', 'person', 'text', 'Contoh: Bpk. Hendra Kusuma', 3, 'Masukkan nama mentor atau pembimbing peserta PKL.'],
+                    [
+                        'password',
+                        'Password / Sandi',
+                        'lock',
+                        'password',
+                        'Minimal 6 karakter',
+                        1,
+                        'Password ini digunakan peserta untuk login ke sistem.',
+                    ],
+                    [
+                        'kelompokDivisi',
+                        'Kelompok / Divisi Penugasan',
+                        'lan',
+                        'list',
+                        'Contoh: Install',
+                        1,
+                        'Pilih dari saran agar penulisan nama kelompok seragam.',
+                    ],
+                    [
+                        'mentor',
+                        'Nama Mentor',
+                        'person',
+                        'text',
+                        'Contoh: Bpk. Hendra Kusuma',
+                        3,
+                        'Masukkan nama mentor atau pembimbing peserta PKL.',
+                    ],
                 ],
             ],
             [
-                'no' => '02', 'title' => 'Periode & Penempatan PKL',
+                'no' => '02',
+                'title' => 'Periode & Penempatan PKL',
                 'desc' => 'Jadwal resmi masa magang dan lokasi unit penugasan',
-                'bar' => 'bg-secondary', 'badge' => 'bg-secondary-fixed text-on-secondary-fixed',
+                'bar' => 'bg-secondary',
+                'badge' => 'bg-secondary-fixed text-on-secondary-fixed',
                 'fields' => [
                     ['tanggalMulai', 'Tanggal Mulai', 'calendar_today', 'date', '', 1],
                     ['tanggalSelesai', 'Tanggal Selesai', 'event_available', 'date', '', 1],
@@ -50,7 +84,9 @@
             <div>
                 <div class="flex items-center gap-space-sm">
                     <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Tambah User</h1>
-                    <span class="px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed text-[11px] font-bold uppercase">Akun Baru</span>
+                    <span
+                        class="px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed text-[11px] font-bold uppercase">Akun
+                        Baru</span>
                 </div>
                 <p class="text-sm text-on-surface-variant mt-1">
                     Buat akun peserta PKL baru dan alokasikan kelompok operasional kerja lapangan
@@ -81,7 +117,8 @@
                     <div class="absolute top-0 left-0 w-1.5 h-full {{ $s['bar'] }}"></div>
 
                     <div class="flex items-center gap-space-sm pb-space-md mb-space-lg">
-                        <div class="w-8 h-8 rounded-lg {{ $s['badge'] }} flex items-center justify-center font-bold">{{ $s['no'] }}</div>
+                        <div class="w-8 h-8 rounded-lg {{ $s['badge'] }} flex items-center justify-center font-bold">
+                            {{ $s['no'] }}</div>
                         <div>
                             <h2 class="text-base font-semibold">{{ $s['title'] }}</h2>
                             <p class="text-xs text-on-surface-variant">{{ $s['desc'] }}</p>
@@ -101,12 +138,15 @@
                                 </label>
 
                                 @if ($type === 'tel')
-                                    <div class="flex items-center rounded-lg bg-surface-container-low overflow-hidden focus-within:ring-2 focus-within:ring-primary{{ $ring }}">
-                                        <span class="px-3.5 py-2.5 bg-surface-container text-on-surface-variant font-semibold flex items-center gap-1">
+                                    <div
+                                        class="flex items-center rounded-lg bg-surface-container-low overflow-hidden focus-within:ring-2 focus-within:ring-primary{{ $ring }}">
+                                        <span
+                                            class="px-3.5 py-2.5 bg-surface-container text-on-surface-variant font-semibold flex items-center gap-1">
                                             <span class="material-symbols-outlined text-[16px] text-primary">call</span>+62
                                         </span>
-                                        <input id="{{ $name }}" name="{{ $name }}" type="tel" inputmode="tel" required
-                                            placeholder="{{ $ph }}" value="{{ old($name) }}"
+                                        <input id="{{ $name }}" name="{{ $name }}" type="tel"
+                                            inputmode="tel" required placeholder="{{ $ph }}"
+                                            value="{{ old($name) }}"
                                             class="w-full px-3 py-2.5 bg-transparent placeholder:text-outline focus:outline-none">
                                     </div>
                                 @elseif ($type === 'select')
@@ -114,35 +154,42 @@
                                         <span class="{{ $iconCls }} !text-secondary">{{ $icon }}</span>
                                         <select id="{{ $name }}" name="{{ $name }}" required
                                             class="{{ $input }} !pr-10 appearance-none cursor-pointer{{ $ring }}">
-                                            <option value="" disabled @selected(!old($name))>Pilih Unit / Rayon...</option>
+                                            <option value="" disabled @selected(!old($name))>Pilih Unit /
+                                                Rayon...</option>
                                             @foreach ($units as $val => $text)
-                                                <option value="{{ $val }}" @selected(old($name) == $val)>{{ $text }}</option>
+                                                <option value="{{ $val }}" @selected(old($name) == $val)>
+                                                    {{ $text }}</option>
                                             @endforeach
                                         </select>
-                                        <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+                                        <span
+                                            class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
                                     </div>
                                 @else
                                     <div class="relative">
                                         <span class="{{ $iconCls }}">{{ $icon }}</span>
                                         @if ($type === 'password')
-                                            <input id="password" name="password" type="password" required minlength="6" maxlength="100"
-                                                autocomplete="new-password" placeholder="{{ $ph }}"
+                                            <input id="password" name="password" type="password" required minlength="6"
+                                                maxlength="100" autocomplete="new-password"
+                                                placeholder="{{ $ph }}"
                                                 class="{{ $input }} !pr-12{{ $ring }}">
                                             <button type="button" id="togglePassword" title="Tampilkan password"
                                                 class="absolute right-3.5 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors">
-                                                <span class="material-symbols-outlined text-[20px]" id="passwordIcon">visibility</span>
+                                                <span class="material-symbols-outlined text-[20px]"
+                                                    id="passwordIcon">visibility</span>
                                             </button>
                                         @else
-                                            <input id="{{ $name }}" name="{{ $name }}" type="{{ $type === 'list' ? 'text' : $type }}" required
+                                            <input id="{{ $name }}" name="{{ $name }}"
+                                                type="{{ $type === 'list' ? 'text' : $type }}" required
                                                 @if ($type === 'list') list="daftarKelompok" @endif
                                                 @if ($ph) placeholder="{{ $ph }}" @endif
-                                                value="{{ old($name) }}" class="{{ $input }}{{ $ring }}">
+                                                value="{{ old($name) }}"
+                                                class="{{ $input }}{{ $ring }}">
                                         @endif
                                     </div>
-                                    @if ($type === 'list' && isset($groups))
+                                    @if ($type === 'list' && isset($divisions))
                                         <datalist id="daftarKelompok">
-                                            @foreach ($groups as $g)
-                                                <option value="{{ $g->name ?? $g }}"></option>
+                                            @foreach ($divisions as $d)
+                                                <option value="{{ $d }}"></option>
                                             @endforeach
                                         </datalist>
                                     @endif
@@ -153,7 +200,8 @@
                                 @enderror
                                 @if ($hint)
                                     <p class="text-xs text-on-surface-variant flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-[16px] text-secondary">info</span>{{ $hint }}
+                                        <span
+                                            class="material-symbols-outlined text-[16px] text-secondary">info</span>{{ $hint }}
                                     </p>
                                 @endif
                             </div>
@@ -163,12 +211,15 @@
             @endforeach
 
             {{-- Aksi --}}
-            <div class="p-space-md rounded-xl bg-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-space-md">
+            <div
+                class="p-space-md rounded-xl bg-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-space-md">
                 <div class="flex items-center gap-space-sm text-on-surface-variant">
-                    <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0">
+                    <div
+                        class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0">
                         <span class="material-symbols-outlined text-[18px]">verified_user</span>
                     </div>
-                    <p class="text-xs">Pastikan seluruh data penempatan dan kontak telah divalidasi sesuai surat penerimaan resmi.</p>
+                    <p class="text-xs">Pastikan seluruh data penempatan dan kontak telah divalidasi sesuai surat penerimaan
+                        resmi.</p>
                 </div>
                 <div class="flex items-center gap-space-sm w-full sm:w-auto justify-end">
                     <button type="button" id="btnBatal"

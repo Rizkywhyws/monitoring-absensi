@@ -27,7 +27,7 @@ class LeaveApprovalController extends Controller
                 $q->whereHas('user', function ($u) use ($keyword) {
                     $u->where(function ($w) use ($keyword) {
                         $w->where('name', 'like', "%{$keyword}%")
-                          ->orWhere('nim', 'like', "%{$keyword}%");
+                            ->orWhere('nim', 'like', "%{$keyword}%");
                     });
                 });
             });
@@ -37,8 +37,8 @@ class LeaveApprovalController extends Controller
             ->pluck('total', 'status');
 
         $leaves = (clone $base)
-            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
-            ->with(['user.group', 'reviewer:id,name'])
+            ->when($status !== 'all', fn($q) => $q->where('status', $status))
+            ->with(['user', 'reviewer:id,name'])
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -76,7 +76,7 @@ class LeaveApprovalController extends Controller
 
                     $row->wasRecentlyCreated ? $created++ : $skipped++;
                 } catch (UniqueConstraintViolationException $e) {
-                    $skipped++; 
+                    $skipped++;
                 }
             }
 
